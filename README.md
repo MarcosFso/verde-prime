@@ -2,7 +2,7 @@
 
 Sistema web full-stack para gestão de fichas técnicas de consultoria ambiental (Cadastro Ambiental Rural — CAR), desenvolvido para uso real por uma empresa de consultoria ambiental. Multi-usuário, com controle financeiro, geração de documentos em PDF e modo offline.
 
-**🔗 Demo ao vivo:** [verde-prime.netlify.app](https://verde-prime.netlify.app)
+**🔗 Demo ao vivo:** [verde-prime.vercel.app](https://verde-prime.vercel.app)
 
 ## 🛠️ Tecnologias
 
