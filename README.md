@@ -1,86 +1,71 @@
-# Verde Prime — Fichas Técnicas
+# 🌿 Verde Prime — Sistema de Fichas Técnicas
 
-Front-end em **React** (Vite), back-end em **Supabase** (banco de dados PostgreSQL + login + armazenamento de arquivos).
+Sistema web full-stack para gestão de fichas técnicas de consultoria ambiental (Cadastro Ambiental Rural — CAR), desenvolvido para uso real por uma empresa de consultoria ambiental. Multi-usuário, com controle financeiro, geração de documentos em PDF e modo offline.
 
-## Estrutura do projeto
+**🔗 Demo ao vivo:** [verde-prime.netlify.app](https://verde-prime.netlify.app)
+
+## 🛠️ Tecnologias
+
+- **Frontend:** React 18, Vite, CSS puro (sem framework de UI)
+- **Backend:** Supabase (PostgreSQL, Autenticação, Storage)
+- **Segurança:** Row Level Security (RLS) no banco de dados — cada usuário só acessa seus próprios dados; administradores têm acesso ampliado via políticas específicas
+- **PWA:** instalável, com suporte offline via Service Worker (`vite-plugin-pwa`)
+- **Geração de PDF:** `html2pdf.js`, carregado sob demanda (code splitting) para não pesar o carregamento inicial
+- **Ícones:** `lucide-react`
+
+## ✨ Funcionalidades
+
+- **Autenticação multi-usuário** com e-mail real, recuperação de senha e termos de uso (LGPD)
+- **Perfis de administrador** — visualizam e gerenciam fichas e usuários de toda a equipe
+- **Ficha técnica completa** com 10 seções (proprietário, imóvel, CAR, levantamento ambiental, documentação, notificações, protocolo, financeiro, etc.)
+- **Controle financeiro por ficha** — valor do serviço, pagamentos parcelados com data, cálculo automático de saldo a receber
+- **Painel financeiro consolidado** — saldo, recebido, a receber, despesas, gráfico de recebimentos por mês
+- **Anexos** — fotos (com compressão automática) e documentos, armazenados de forma privada por usuário no Supabase Storage
+- **Geração de PDF** — recibo de pagamento personalizado e exportação completa da ficha
+- **Modo escuro / claro**
+- **Modo offline (PWA)** — o app abre mesmo sem conexão; dados sincronizam quando a internet volta
+- **Rascunho automático** — o formulário salva sozinho enquanto você digita
+- **Logout automático por inatividade** (30 minutos)
+- **Busca, filtros e ordenação** na lista de fichas
+
+## 🔒 Segurança
+
+O banco de dados usa **Row Level Security (RLS)** do PostgreSQL/Supabase: as regras de acesso são aplicadas diretamente no banco, não apenas na interface. Isso significa que mesmo que alguém tente acessar a API diretamente (fora da tela), as permissões continuam sendo respeitadas — usuários comuns só veem os próprios dados, administradores têm acesso ampliado via políticas específicas para cada tabela (fichas, despesas, perfis e arquivos anexados).
+
+## 📁 Estrutura do projeto
 
 ```
-verde-prime-app/
-  src/
-    api.js                    -> todas as chamadas ao Supabase (login, fichas, anexos, despesas)
-    supabaseClient.js         -> conexão com o Supabase (lê as chaves do .env)
-    config/sections.js        -> configuração dos campos e seções da ficha + tema de cores
-    utils/                    -> máscaras de campo, validação de CPF/CNPJ, compressão de imagem, financeiro, gerador de recibo em PDF
-    components/               -> telas (Login, Lista, Formulário, Financeiro, Usuários, Impressão de recibo)
-    assets/                   -> logo e imagens usadas no recibo em PDF
-    App.jsx                   -> tela principal, controla navegação e estado
+src/
+  api.js                 -> chamadas ao Supabase (autenticação, fichas, anexos, despesas)
+  supabaseClient.js       -> conexão com o Supabase (lê as chaves do .env)
+  config/sections.js      -> configuração dos campos/seções da ficha + tema de cores
+  utils/                  -> máscaras, validações, compressão de imagem, cálculos financeiros, geração de PDF
+  components/             -> telas e componentes (autenticação, lista, formulário, financeiro, admin)
+  App.jsx                 -> roteamento de telas e estado global
 ```
 
-## Passo 1 — Configurar o Supabase
+## 🚀 Rodando localmente
 
-O projeto já está ligado a um banco no Supabase (as chaves ficam no arquivo `.env`, que **não é enviado ao GitHub**).
-
-Se quiser criar um projeto Supabase novo do zero:
-
-1. Acesse **https://supabase.com**, crie uma conta gratuita e um novo projeto.
-2. Crie as tabelas `profiles`, `fichas` e `despesas`, e um bucket de Storage privado chamado `anexos`.
-3. Em **Authentication → URL Configuration**, adicione `http://localhost:5173` (e depois a URL do site publicado) em **Redirect URLs**.
-4. Copie a **Project URL** e a **anon public key** em **Project Settings → API**.
-
-> **Sobre a chave "anon key":** ela é feita para ser pública (o navegador precisa dela para falar com o Supabase). Quem realmente protege os dados são as políticas de **Row Level Security (RLS)** nas tabelas. Confirme no painel do Supabase, em **Authentication → Policies**, que RLS está ativado e que cada usuário só acessa suas próprias fichas.
-
-## Passo 2 — Configurar o projeto localmente
-
-1. Instale o [Node.js](https://nodejs.org) (versão 18 ou mais recente).
-2. Copie `.env.example` para `.env` e preencha com as suas chaves do Supabase:
+1. Instale o [Node.js](https://nodejs.org) (18+)
+2. Copie `.env.example` para `.env` e preencha com as suas próprias chaves do Supabase:
    ```
    VITE_SUPABASE_URL=https://seu-projeto.supabase.co
    VITE_SUPABASE_ANON_KEY=sua-chave-anon-aqui
    ```
-3. Instale as dependências e rode localmente:
+3. Instale as dependências e rode:
    ```bash
    npm install
    npm run dev
    ```
-   Isso abre o site em `http://localhost:5173`.
+   O site abre em `http://localhost:5173`.
 
-## Passo 3 — Subir para o GitHub
-
-Este projeto já está pronto para ir para um repositório Git:
+## 📦 Deploy
 
 ```bash
-git init
-git add .
-git commit -m "Versão inicial modular do Verde Prime"
+npm run build
 ```
+Gera a pasta `dist/`, pronta para qualquer hospedagem estática (Vercel, Netlify, Cloudflare Pages). Configure as variáveis de ambiente (`VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`) no painel do serviço escolhido.
 
-O `.gitignore` já exclui `node_modules`, `dist` e o arquivo `.env` (para as chaves não irem para o repositório).
+---
 
-## Passo 4 — Colocar no ar (hospedagem)
-
-Depois de `npm run build`, a pasta `dist/` contém o site pronto para qualquer hospedagem estática:
-
-- **Vercel** ou **Netlify** — conecte o repositório do GitHub, configure as variáveis de ambiente (`VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`) no painel deles, e cada push publica automaticamente.
-- **Hospedagem tradicional (cPanel, Hostinger, etc.)** — rode `npm run build` e suba o conteúdo da pasta `dist/` via FTP.
-
-## Primeiro acesso
-
-O **primeiro usuário que criar uma conta** no site vira automaticamente **administrador** (pode ver os cadastros de todos os outros usuários).
-
-## Funcionalidades
-
-- Login e criação de conta com e-mail real, multi-usuário
-- Recuperação de senha por e-mail
-- Termos de uso / aviso de privacidade (LGPD) no primeiro acesso
-- Ficha completa com 12 seções + dados do cadista
-- Anexo de fotos e documentos (Supabase Storage, por usuário)
-- Geração de recibo em PDF com dados da empresa
-- Filtros por situação, prazo vencido e busca por nome/CPF/CAR/protocolo
-- Rascunho automático (salvo no navegador)
-- Duplicar, arquivar/desarquivar, excluir fichas
-- Histórico de alterações por ficha
-- Painel financeiro: saldo, recebido, a receber, despesas extras, gráfico dos últimos 6 meses, cadista
-- Painel de administração de usuários (promover a admin, ativar/desativar conta)
-- Dashboard com resumo de situação das fichas
-- Indicador de status online/offline
-- Validação de CPF/CNPJ e máscaras de telefone
+*Projeto desenvolvido e mantido de ponta a ponta — banco de dados, autenticação, regras de segurança e interface.*
