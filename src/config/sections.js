@@ -11,11 +11,12 @@ const SIM_NAO_NV = [
 export const SECTIONS = [
   {
     id: "cabecalho",
-    title: "Dados da visita",
+    title: "Cadastrante",
     icon: "calendar",
     accent: "#3B4C99",
     fields: [
-      { id: "tecnico", label: "Técnico responsável", type: "text" },
+      { id: "data_visita", label: "Data da Visita", type: "date" },
+      { id: "tecnico", label: "Técnico", type: "text" },
     ],
   },
   {
