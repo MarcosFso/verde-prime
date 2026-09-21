@@ -16,7 +16,7 @@ export const SECTIONS = [
     accent: "#3B4C99",
     fields: [
       { id: "data_visita", label: "Data", type: "date" },
-      { id: "tecnico", label: "Técnico", type: "text" },
+      { id: "tecnico", label: "Responsável", type: "text" },
     ],
   },
   {
