@@ -15,7 +15,7 @@ export const SECTIONS = [
     icon: "calendar",
     accent: "#3B4C99",
     fields: [
-      { id: "data_visita", label: "Data da Visita", type: "date" },
+      { id: "data_visita", label: "Data", type: "date" },
       { id: "tecnico", label: "Técnico", type: "text" },
     ],
   },
