@@ -303,16 +303,22 @@ export const THEME = {
 
 export function emptyRecord() {
   const r = { id: null, fotos: [], documentos: [], arquivado: false, historico: [], pagamentos: [], valor_recebido: 0 };
-  SECTIONS.forEach((s) => s.fields.forEach((f) => { r[f.id] = f.type === "checkboxGroup" ? [] : ""; }));
+  SECTIONS.forEach((s) => s.fields.forEach((f) => {
+    if (f.type === "checkboxGroup") r[f.id] = [];
+    else if (f.type === "currency") r[f.id] = 0;
+    else r[f.id] = "";
+  }));
   return r;
 }
 
-/** Converts empty-string number/date fields to null so Postgres accepts them. */
+/** Converts empty-string number/date fields to null (or 0 for currency) so Postgres accepts them. */
 export function sanitizeForDb(record) {
   const clean = { ...record };
   SECTIONS.forEach((s) =>
     s.fields.forEach((f) => {
-      if ((f.type === "number" || f.type === "date") && clean[f.id] === "") {
+      if (f.type === "currency" && (clean[f.id] === "" || clean[f.id] === null || clean[f.id] === undefined)) {
+        clean[f.id] = 0;
+      } else if ((f.type === "number" || f.type === "date") && clean[f.id] === "") {
         clean[f.id] = null;
       }
     })
