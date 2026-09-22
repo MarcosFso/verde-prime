@@ -17,7 +17,7 @@ Sistema web full-stack para gestão de fichas técnicas de consultoria ambiental
 
 - **Autenticação multi-usuário** com e-mail real, recuperação de senha e termos de uso (LGPD)
 - **Perfis de administrador** — visualizam e gerenciam fichas e usuários de toda a equipe
-- **Ficha técnica completa** com 10 seções (proprietário, imóvel, CAR, levantamento ambiental, documentação, notificações, protocolo, financeiro, etc.)
+- **Ficha técnica completa** com 13 seções (cadastrante, cadista, proprietário, imóvel, CAR, levantamento ambiental, documentação, notificações, protocolo, financeiro, etc.)
 - **Controle financeiro por ficha** — valor do serviço, pagamentos parcelados com data, cálculo automático de saldo a receber
 - **Painel financeiro consolidado** — saldo, recebido, a receber, despesas, gráfico de recebimentos por mês
 - **Anexos** — fotos (com compressão automática) e documentos, armazenados de forma privada por usuário no Supabase Storage
