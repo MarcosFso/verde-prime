@@ -36,34 +36,15 @@ export async function generateReciboWord(formData) {
 
   const complementoTexto = (complemento || "").trim() ? `, ${esc(complemento.trim())}` : "";
 
-  // Linha pontilhada ligando o nome da fazenda à matrícula, que fica encostada
-  // na margem direita. Os pontos são cortados no tamanho exato do vão sobrando
-  // (overflow hidden) — mesmo efeito do "preenchimento pontilhado" do Word.
-  const PONTOS = ".".repeat(200);
-  // Acima disso o nome não cabe na mesma linha da matrícula; aí a linha vira um
-  // parágrafo comum, que quebra sozinho, em vez de estourar a margem direita.
-  const MAX_CHARS_LINHA_PONTILHADA = 38;
-
+  // Cada imóvel numa linha com marcador: • NOME DA FAZENDA – Matrícula nº 00.000;
   const linhasImoveis = imoveisValidos
     .map((im) => {
-      const nomeTexto = im.nome.trim().toUpperCase();
-      const nome = `<span class="b">${esc(nomeTexto)}</span>`;
+      const nome = `<span class="b">${esc(im.nome.trim().toUpperCase())}</span>`;
       const matricula = (im.matricula || "").trim();
-      if (!matricula) {
-        return `<p class="imovel">${nome};</p>`;
-      }
-      if (nomeTexto.length > MAX_CHARS_LINHA_PONTILHADA) {
-        return `<p class="imovel">${nome} – Matrícula nº <span class="b">${esc(matricula)}</span>;</p>`;
-      }
-      // Uma tabela por imóvel: assim cada linha calcula o próprio vão. Numa
-      // tabela só, um nome comprido encolheria a coluna dos pontos de todas.
-      return `<table>
-        <tr>
-          <td class="nome">${nome}</td>
-          <td class="leader"><div>${PONTOS}</div></td>
-          <td class="mat">Matrícula nº <span class="b">${esc(matricula)}</span>;</td>
-        </tr>
-      </table>`;
+      const complementoImovel = matricula
+        ? ` – Matrícula nº <span class="b">${esc(matricula)}</span>`
+        : "";
+      return `<p class="imovel"><span class="marcador">•</span>${nome}${complementoImovel};</p>`;
     })
     .join("");
 
@@ -78,8 +59,10 @@ export async function generateReciboWord(formData) {
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
 
+          /* O modelo do cliente usa Courier New 12pt: confirmado pelas medidas da
+             fonte embutida no PDF dele (monoespaçada, panose 2 7 3 9, 2048 und/em). */
           body {
-            font-family: Arial, Helvetica, sans-serif;
+            font-family: "Courier New", Courier, monospace;
             font-size: 12pt;
             line-height: 1.15;
             color: #4D4D4F;
@@ -119,7 +102,9 @@ export async function generateReciboWord(formData) {
           .content {
             position: relative;
             z-index: 1;
-            padding: 5mm 30mm 0 30mm;
+            /* Margens do modelo: 30mm à esquerda e 17.4mm à direita, o que dá
+               exatamente 64 caracteres por linha em Courier New 12pt. */
+            padding: 5mm 17.4mm 0 30mm;
           }
 
           /* Uma linha em branco entre parágrafos, como no modelo. */
@@ -139,37 +124,18 @@ export async function generateReciboWord(formData) {
           .imoveis {
             margin: 0 0 13.8pt 12.7mm;
           }
-          .imoveis table {
-            border-collapse: collapse;
-            width: 100%;
-          }
+          /* Recuo pendurado: se o nome for longo e quebrar, a segunda linha
+             alinha com o texto, não com o marcador. */
           .imoveis .imovel {
             margin: 0;
             text-align: left;
+            padding-left: 7.2mm;
+            text-indent: -7.2mm;
           }
-          .imoveis td {
-            padding: 0;
-            vertical-align: bottom;
-            white-space: nowrap;
-            text-align: left;
-          }
-          .imoveis td.leader {
-            width: 100%;
-            position: relative;
-            /* Garante um vão mínimo mesmo quando o nome ocupa a linha toda. */
-            padding: 0 5pt;
-          }
-          /* Fora do fluxo, os pontos não empurram a matrícula: eles só preenchem
-             o vão que sobrou e são cortados no limite exato da célula. */
-          .imoveis td.leader > div {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            overflow: hidden;
-            white-space: nowrap;
-            letter-spacing: 1.5pt;
-            line-height: 1.15;
+          .marcador {
+            display: inline-block;
+            width: 7.2mm;
+            text-indent: 0;
           }
 
           .signature {
