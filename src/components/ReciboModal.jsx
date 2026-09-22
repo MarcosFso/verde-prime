@@ -1,25 +1,44 @@
 import { useState } from "react";
-import { Download, Receipt, X, Loader2 } from "lucide-react";
+import { Download, Receipt, X, Loader2, Plus, Trash2, MapPin } from "lucide-react";
 import { THEME } from "../config/sections";
 import { FieldLabel } from "./FieldInput";
 import { formatCurrencyDigits, parseCurrencyInput } from "../utils/masks";
+import { valorEmPalavras } from "../utils/extenso";
 import { generateReciboWord } from "../utils/word";
+
+const SERVICOS_PADRAO = "desmembramento, Cadastro Ambiental Rural – CAR, bem como ajustamento de áreas";
+
+// Acima disso a lista passa por cima do rodapé e o recibo sairia cortado.
+const MAX_IMOVEIS = 12;
 
 export default function ReciboModal({ ficha, onClose }) {
   const { ink, muted, line, brand, card, bg } = THEME;
   const [data, setData] = useState(() => ({
     nome_cliente: ficha.nome || "",
     valor: Number(ficha.valor_recebido) || 0,
-    servico: "",
-    nome_fazenda: ficha.nome_imovel || "",
-    area: ficha.area_aproximada || "",
-    matricula: ficha.matricula || "",
+    servicos: SERVICOS_PADRAO,
+    imoveis: [{ nome: ficha.nome_imovel || "", matricula: ficha.matricula || "" }],
     data: new Date().toISOString().slice(0, 10),
-    cidade: ficha.municipio_uf ? ficha.municipio_uf.split("/")[0] : "",
   }));
 
   const [generating, setGenerating] = useState(false);
   const handleChange = (field, value) => setData((prev) => ({ ...prev, [field]: value }));
+
+  const handleImovel = (index, field, value) =>
+    setData((prev) => ({
+      ...prev,
+      imoveis: prev.imoveis.map((im, i) => (i === index ? { ...im, [field]: value } : im)),
+    }));
+
+  const addImovel = () =>
+    setData((prev) =>
+      prev.imoveis.length >= MAX_IMOVEIS
+        ? prev
+        : { ...prev, imoveis: [...prev.imoveis, { nome: "", matricula: "" }] }
+    );
+
+  const removeImovel = (index) =>
+    setData((prev) => ({ ...prev, imoveis: prev.imoveis.filter((_, i) => i !== index) }));
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -28,14 +47,16 @@ export default function ReciboModal({ ficha, onClose }) {
       onClose();
     } catch (err) {
       console.error(err);
-      alert("Não foi possível gerar o recibo. Se o site foi atualizado recentemente, tente recarregar a página (puxe pra baixo ou aperte F5) e tente de novo.");
+      alert(
+        err?.message ||
+          "Não foi possível gerar o recibo. Se o site foi atualizado recentemente, tente recarregar a página (puxe pra baixo ou aperte F5) e tente de novo."
+      );
     } finally {
       setGenerating(false);
     }
   };
 
-  const highlightStyle = { width: "100%", padding: 10, border: `1.5px solid ${line}`, borderRadius: 8, outline: "none", background: "#FFFFCC", color: "#3a3200" };
-  const normalStyle = { width: "100%", padding: 10, border: `1.5px solid ${line}`, borderRadius: 8, outline: "none", background: card, color: ink };
+  const inputStyle = { width: "100%", padding: 10, border: `1.5px solid ${line}`, borderRadius: 8, outline: "none", background: card, color: ink };
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 30 }}>
@@ -45,62 +66,80 @@ export default function ReciboModal({ ficha, onClose }) {
             <Receipt size={19} />
           </div>
           <div style={{ flex: 1 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: ink, margin: 0 }}>Gerar Recibo de Pagamento</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: ink, margin: 0 }}>Gerar Recibo de Prestação de Serviços</h3>
             <p style={{ color: muted, fontSize: 12, margin: "2px 0 0" }}>Ficha de {ficha.nome}</p>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", color: muted, cursor: "pointer", display: "flex" }}><X size={18} /></button>
         </div>
 
         <div style={{ padding: "18px 24px 24px" }}>
-          <div style={{ background: bg, border: `1px solid ${line}`, borderRadius: 8, padding: "10px 12px", fontSize: 12, color: muted, marginBottom: 18 }}>
-            Os campos destacados em <span style={{ background: "#FFFFCC", color: "#3a3200", padding: "2px 4px", borderRadius: 3 }}>amarelo</span> preenchem o corpo do recibo automaticamente.
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
             <div style={{ gridColumn: "1 / -1" }}>
               <FieldLabel>Nome do cliente *</FieldLabel>
-              <input type="text" value={data.nome_cliente} onChange={(e) => handleChange("nome_cliente", e.target.value)} style={normalStyle} />
+              <input type="text" value={data.nome_cliente} onChange={(e) => handleChange("nome_cliente", e.target.value)} style={inputStyle} />
             </div>
 
             <div>
               <FieldLabel>Valor (R$) *</FieldLabel>
               <div style={{ position: "relative" }}>
-                <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#3a3200", fontSize: 13, pointerEvents: "none" }}>R$</span>
+                <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: muted, fontSize: 13, pointerEvents: "none" }}>R$</span>
                 <input type="text" inputMode="numeric" value={data.valor ? formatCurrencyDigits(data.valor) : ""} placeholder="0,00"
                   onChange={(e) => handleChange("valor", parseCurrencyInput(e.target.value))}
-                  style={{ ...highlightStyle, paddingLeft: 32 }} />
+                  style={{ ...inputStyle, paddingLeft: 32 }} />
               </div>
+              {data.valor > 0 && (
+                <p style={{ color: muted, fontSize: 11, margin: "5px 0 0", fontStyle: "italic" }}>
+                  ({valorEmPalavras(data.valor)})
+                </p>
+              )}
             </div>
 
             <div>
               <FieldLabel>Data *</FieldLabel>
-              <input type="date" value={data.data} onChange={(e) => handleChange("data", e.target.value)} style={normalStyle} />
+              <input type="date" value={data.data} onChange={(e) => handleChange("data", e.target.value)} style={inputStyle} />
             </div>
 
             <div style={{ gridColumn: "1 / -1" }}>
-              <FieldLabel>Serviço *</FieldLabel>
-              <textarea value={data.servico} onChange={(e) => handleChange("servico", e.target.value)} rows={2} style={{ ...highlightStyle, resize: "none" }} />
+              <FieldLabel>Serviços prestados *</FieldLabel>
+              <textarea value={data.servicos} onChange={(e) => handleChange("servicos", e.target.value)} rows={2} style={{ ...inputStyle, resize: "vertical" }} />
+              <p style={{ color: muted, fontSize: 11, margin: "5px 0 0" }}>
+                Entra no recibo depois de "referente à prestação de serviços técnicos para".
+              </p>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <FieldLabel>Imóveis rurais *</FieldLabel>
+              <button onClick={addImovel} type="button"
+                disabled={data.imoveis.length >= MAX_IMOVEIS}
+                title={data.imoveis.length >= MAX_IMOVEIS ? `Cabem até ${MAX_IMOVEIS} imóveis em uma página` : "Adicionar outro imóvel"}
+                style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: `1.5px solid ${line}`, color: brand, fontSize: 12, fontWeight: 600, padding: "5px 10px", borderRadius: 7, cursor: data.imoveis.length >= MAX_IMOVEIS ? "default" : "pointer", opacity: data.imoveis.length >= MAX_IMOVEIS ? 0.4 : 1 }}>
+                <Plus size={13} /> Adicionar
+              </button>
             </div>
 
-            <div style={{ gridColumn: "1 / -1" }}>
-              <FieldLabel>Nome da Fazenda *</FieldLabel>
-              <input type="text" value={data.nome_fazenda} onChange={(e) => handleChange("nome_fazenda", e.target.value)} style={highlightStyle} />
-            </div>
+            {data.imoveis.map((imovel, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 8 }}>
+                <input type="text" value={imovel.nome} placeholder="Nome da fazenda"
+                  onChange={(e) => handleImovel(i, "nome", e.target.value)}
+                  style={{ ...inputStyle, flex: 2 }} />
+                <input type="text" value={imovel.matricula} placeholder="Matrícula nº"
+                  onChange={(e) => handleImovel(i, "matricula", e.target.value)}
+                  style={{ ...inputStyle, flex: 1 }} />
+                <button onClick={() => removeImovel(i)} type="button"
+                  disabled={data.imoveis.length === 1}
+                  title={data.imoveis.length === 1 ? "O recibo precisa de pelo menos um imóvel" : "Remover"}
+                  style={{ background: "none", border: "none", color: muted, cursor: data.imoveis.length === 1 ? "default" : "pointer", opacity: data.imoveis.length === 1 ? 0.3 : 1, padding: 10, display: "flex", flexShrink: 0 }}>
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
 
-            <div>
-              <FieldLabel>Área Total (ha) *</FieldLabel>
-              <input type="text" value={data.area} onChange={(e) => handleChange("area", e.target.value)} style={highlightStyle} />
-            </div>
-
-            <div>
-              <FieldLabel>Matrícula nº *</FieldLabel>
-              <input type="text" value={data.matricula} onChange={(e) => handleChange("matricula", e.target.value)} style={highlightStyle} />
-            </div>
-
-            <div style={{ gridColumn: "1 / -1" }}>
-              <FieldLabel>Cidade/UF</FieldLabel>
-              <input type="text" value={data.cidade} onChange={(e) => handleChange("cidade", e.target.value)} style={normalStyle} />
-            </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: bg, border: `1px solid ${line}`, borderRadius: 8, padding: "10px 12px", fontSize: 12, color: muted, marginBottom: 18 }}>
+            <MapPin size={14} style={{ flexShrink: 0 }} />
+            <span>O recibo é sempre emitido em <strong style={{ color: ink }}>Formoso/MG</strong>, com a assinatura da Verde Prime e o Pix no rodapé.</span>
           </div>
 
           <div style={{ display: "flex", gap: 10 }}>

@@ -2,29 +2,45 @@ import bgImg from "../assets/recibo_bg.png";
 import separadorImg from "../assets/recibo_separador.png";
 import rodapeImg from "../assets/recibo_rodape.png";
 import { formatCurrencyDigits } from "./masks";
+import { valorEmPalavras } from "./extenso";
+
+const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+
+// A sede da Verde Prime não muda, então a cidade do recibo é fixa.
+const CIDADE = "Formoso/MG";
+
+/** Evita que um texto digitado pelo usuário quebre o HTML do recibo. */
+function esc(texto) {
+  return String(texto ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
 
 export async function generateReciboWord(formData) {
-  const { nome_cliente, valor, servico, nome_fazenda, area, matricula, data, cidade } = formData;
+  const { nome_cliente, valor, servicos, imoveis, data } = formData;
 
-  if (!nome_cliente || !valor || !servico || !nome_fazenda || !area || !matricula || !data || !cidade) {
-    alert("⚠️ Preencha todos os campos obrigatórios!");
-    return;
+  const imoveisValidos = (imoveis || []).filter((im) => (im.nome || "").trim());
+
+  if (!nome_cliente || !valor || !servicos || !data) {
+    throw new Error("Preencha o nome do cliente, o valor, os serviços e a data.");
+  }
+  if (!imoveisValidos.length) {
+    throw new Error("Informe pelo menos um imóvel rural.");
   }
 
-  // Limpar cidade - remover MG, espaços e hífens
-  let cidadeLimpa = cidade.trim();
-  cidadeLimpa = cidadeLimpa
-    .replace(/\s*-\s*MG$/i, "")
-    .replace(/\/MG$/i, "")
-    .replace(/\s+MG$/i, "")
-    .replace(/\s*-\s*$/i, "")
-    .trim();
-
   const dataObj = new Date(data + "T00:00:00");
-  const meses = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
   const dia = String(dataObj.getDate()).padStart(2, "0");
-  const mes = meses[dataObj.getMonth()];
+  const mes = MESES[dataObj.getMonth()];
   const ano = dataObj.getFullYear();
+
+  const linhasImoveis = imoveisValidos
+    .map((im) => {
+      const matricula = (im.matricula || "").trim();
+      const complemento = matricula ? ` – Matrícula nº <span class="bold">${esc(matricula)}</span>` : "";
+      return `<div class="imovel"><span class="bold">${esc(im.nome.trim().toUpperCase())}</span>${complemento};</div>`;
+    })
+    .join("");
 
   // Layout com posicionamento absoluto (nada de flexbox ou background-attachment:fixed,
   // que renderizam de forma inconsistente na conversão para PDF via html2canvas).
@@ -70,45 +86,63 @@ export async function generateReciboWord(formData) {
           .content {
             position: relative;
             z-index: 1;
-            padding: 60px 50px 0 50px;
+            padding: 55px 50px 0 50px;
             line-height: 1.8;
           }
 
           .title {
             text-align: center;
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
-            margin-bottom: 30px;
+            margin-bottom: 34px;
             letter-spacing: 1px;
             color: #000;
           }
 
           .text {
             font-size: 12px;
-            margin: 15px 0;
+            margin: 14px 0;
             color: #000;
             text-align: justify;
             line-height: 1.8;
+          }
+
+          .valor {
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            color: #000;
+            margin: 22px 0;
+          }
+
+          .imoveis {
+            margin: 16px 0 16px 28px;
+          }
+          .imovel {
+            font-size: 12px;
+            color: #000;
+            line-height: 2;
           }
 
           .bold { font-weight: bold; }
           .center { text-align: center; }
 
           .signature {
-            margin-top: 40px;
+            margin-top: 46px;
             text-align: center;
           }
 
           .line {
-            border-top: 2px solid #333;
+            border-top: 1.5px solid #333;
             width: 300px;
-            margin: 35px auto 5px;
+            margin: 0 auto 6px;
           }
 
           .sig-name {
             font-size: 12px;
             font-weight: bold;
             margin: 0;
+            line-height: 1.6;
           }
 
           .footer {
@@ -136,19 +170,27 @@ export async function generateReciboWord(formData) {
           </div>
 
           <div class="content">
-            <div class="title">RECIBO DE PAGAMENTO</div>
+            <div class="title">RECIBO DE PRESTAÇÃO DE SERVIÇOS</div>
 
-            <div class="text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="bold">VERDE PRIME – CONSULTORIA AMBIENTAL</span>, neste ato representada por <span class="bold">MARCOS DIVINO RIBEIRO DE ARAÚJO</span>, <span class="bold">Engenheiro Ambiental, CREA-MG nº 142371881-0</span>, declara, para os devidos fins, que recebeu do Sr. <span class="bold">${nome_cliente}</span> a importância de <span class="bold">R$ ${formatCurrencyDigits(valor)}</span>, referente à prestação de serviços técnicos de <span class="bold">${servico}</span> da <span class="bold">${nome_fazenda}</span>, com área de <span class="bold">${area} ha</span>, matrícula nº <span class="bold">${matricula}</span>.</div>
+            <div class="text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="bold">VERDE PRIME CONSULTORIA AMBIENTAL</span>, declara, para os devidos fins, que recebeu de <span class="bold">${esc(nome_cliente)}</span>, a importância de:</div>
 
-            <div class="text">&nbsp;&nbsp;&nbsp;&nbsp;Pelo presente, a <span class="bold">VERDE PRIME – CONSULTORIA AMBIENTAL</span> declara o recebimento integral do valor acima, dando ao contratante <span class="bold">plena quitação quanto ao pagamento dos serviços descritos</span>.</div>
+            <div class="valor">R$ ${formatCurrencyDigits(valor)} (${valorEmPalavras(valor)})</div>
 
-            <div class="text center" style="margin-top: 40px;"><span class="bold">${cidadeLimpa}/MG, ${dia} de ${mes} de ${ano}</span></div>
+            <div class="text">referente à prestação de serviços técnicos para <span class="bold">${esc(servicos)}</span>, relacionados aos seguintes imóveis rurais:</div>
+
+            <div class="imoveis">${linhasImoveis}</div>
+
+            <div class="text">&nbsp;&nbsp;&nbsp;&nbsp;O valor acima foi <span class="bold">integralmente recebido</span>, dando-se quitação referente aos serviços descritos neste recibo.</div>
+
+            <div class="text center" style="margin-top: 34px;">${CIDADE}, ${dia} de ${mes} de ${ano}.</div>
 
             <div class="signature">
               <div class="line"></div>
-              <div class="sig-name">VERDE PRIME – CONSULTORIA AMBIENTAL</div>
+              <div class="sig-name">VERDE PRIME CONSULTORIA AMBIENTAL</div>
               <div class="sig-name">MARCOS DIVINO RIBEIRO DE ARAÚJO</div>
-              <div class="sig-name">Engenheiro Ambiental – CREA-MG nº 142371881-0</div>
+              <div class="sig-name">ENGENHEIRO AMBIENTAL</div>
+              <div class="sig-name">CREA-MG nº 142371881-0</div>
+              <div class="sig-name">Pix: 38 999738654</div>
             </div>
           </div>
 
