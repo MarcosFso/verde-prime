@@ -311,17 +311,36 @@ export function emptyRecord() {
   return r;
 }
 
-/** Converts empty-string number/date fields to null (or 0 for currency) so Postgres accepts them. */
+/**
+ * Prepara o registro para o banco.
+ *
+ * Regra geral: qualquer texto vazio vira null, porque o Postgres recusa "" em
+ * colunas numéricas e de data. Isso é aplicado sobre TODAS as chaves do registro
+ * (não só sobre os campos da tela atual), porque o banco ainda tem colunas de
+ * campos que já foram removidos do formulário — e rascunhos salvos no navegador
+ * podem trazer valores antigos.
+ */
 export function sanitizeForDb(record) {
   const clean = { ...record };
+
+  Object.keys(clean).forEach((key) => {
+    if (typeof clean[key] === "string" && clean[key].trim() === "") {
+      clean[key] = null;
+    }
+  });
+
+  // Campos de dinheiro ficam em 0 (e não null) para os cálculos e a exibição
+  // continuarem mostrando "0,00" em vez de vazio.
   SECTIONS.forEach((s) =>
     s.fields.forEach((f) => {
-      if (f.type === "currency" && (clean[f.id] === "" || clean[f.id] === null || clean[f.id] === undefined)) {
+      if (f.type === "currency" && (clean[f.id] === null || clean[f.id] === undefined)) {
         clean[f.id] = 0;
-      } else if ((f.type === "number" || f.type === "date") && clean[f.id] === "") {
-        clean[f.id] = null;
       }
     })
   );
+  if (clean.valor_recebido === null || clean.valor_recebido === undefined) {
+    clean.valor_recebido = 0;
+  }
+
   return clean;
 }
