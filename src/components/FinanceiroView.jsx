@@ -198,7 +198,7 @@ export default function FinanceiroView({ fichas, onBack, onOpenFicha, onSaveCadi
 
         <div style={{ background: card, border: `1px solid ${line}`, borderRadius: 12, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: `1px solid ${line}` }}>
-            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: ink, display: "flex", alignItems: "center", gap: 8 }}><Wallet size={15} /> Despesas extras</h3>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: ink, display: "flex", alignItems: "center", gap: 8 }}><Wallet size={15} /> Despesas</h3>
             <button onClick={() => setMostrarFormDespesa((v) => !v)}
               style={{ background: brand, color: "#fff", border: "none", borderRadius: 6, padding: "7px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
               {mostrarFormDespesa ? "Cancelar" : <><Plus size={14} /> Nova despesa</>}
