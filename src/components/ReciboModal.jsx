@@ -6,7 +6,10 @@ import { formatCurrencyDigits, parseCurrencyInput } from "../utils/masks";
 import { valorEmPalavras } from "../utils/extenso";
 import { generateReciboWord } from "../utils/word";
 
-const SERVICOS_PADRAO = "desmembramento, Cadastro Ambiental Rural – CAR, bem como ajustamento de áreas";
+const SERVICOS_PADRAO = "desmembramento, Cadastro Ambiental Rural – CAR";
+const COMPLEMENTO_PADRAO = "bem como ajustamento de áreas";
+const RELACAO_SINGULAR = "relacionado ao seguinte imóvel rural:";
+const RELACAO_PLURAL = "relacionados aos seguintes imóveis rurais:";
 
 // Acima disso a lista passa por cima do rodapé e o recibo sairia cortado.
 const MAX_IMOVEIS = 12;
@@ -17,9 +20,14 @@ export default function ReciboModal({ ficha, onClose }) {
     nome_cliente: ficha.nome || "",
     valor: Number(ficha.valor_recebido) || 0,
     servicos: SERVICOS_PADRAO,
+    complemento: COMPLEMENTO_PADRAO,
+    relacao: RELACAO_SINGULAR,
     imoveis: [{ nome: ficha.nome_imovel || "", matricula: ficha.matricula || "" }],
     data: new Date().toISOString().slice(0, 10),
   }));
+
+  // Enquanto ele não escrever essa frase à mão, ela acompanha a quantidade de imóveis.
+  const [relacaoEditada, setRelacaoEditada] = useState(false);
 
   const [generating, setGenerating] = useState(false);
   const handleChange = (field, value) => setData((prev) => ({ ...prev, [field]: value }));
@@ -30,15 +38,23 @@ export default function ReciboModal({ ficha, onClose }) {
       imoveis: prev.imoveis.map((im, i) => (i === index ? { ...im, [field]: value } : im)),
     }));
 
+  // Ao mudar a quantidade de imóveis, a frase vai pro singular ou pro plural
+  // sozinha — a menos que ele já tenha escrito a dele.
+  const relacaoPara = (quantidade, prev) =>
+    relacaoEditada ? prev.relacao : quantidade > 1 ? RELACAO_PLURAL : RELACAO_SINGULAR;
+
   const addImovel = () =>
-    setData((prev) =>
-      prev.imoveis.length >= MAX_IMOVEIS
-        ? prev
-        : { ...prev, imoveis: [...prev.imoveis, { nome: "", matricula: "" }] }
-    );
+    setData((prev) => {
+      if (prev.imoveis.length >= MAX_IMOVEIS) return prev;
+      const imoveis = [...prev.imoveis, { nome: "", matricula: "" }];
+      return { ...prev, imoveis, relacao: relacaoPara(imoveis.length, prev) };
+    });
 
   const removeImovel = (index) =>
-    setData((prev) => ({ ...prev, imoveis: prev.imoveis.filter((_, i) => i !== index) }));
+    setData((prev) => {
+      const imoveis = prev.imoveis.filter((_, i) => i !== index);
+      return { ...prev, imoveis, relacao: relacaoPara(imoveis.length, prev) };
+    });
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -102,8 +118,32 @@ export default function ReciboModal({ ficha, onClose }) {
             <div style={{ gridColumn: "1 / -1" }}>
               <FieldLabel>Serviços prestados *</FieldLabel>
               <textarea value={data.servicos} onChange={(e) => handleChange("servicos", e.target.value)} rows={2} style={{ ...inputStyle, resize: "vertical" }} />
+            </div>
+
+            <div style={{ gridColumn: "1 / -1" }}>
+              <FieldLabel>Complemento</FieldLabel>
+              <input type="text" value={data.complemento} placeholder="bem como ajustamento de áreas"
+                onChange={(e) => handleChange("complemento", e.target.value)} style={inputStyle} />
+            </div>
+
+            <div style={{ gridColumn: "1 / -1" }}>
+              <FieldLabel>Frase de ligação</FieldLabel>
+              <input type="text" value={data.relacao}
+                onChange={(e) => { setRelacaoEditada(true); handleChange("relacao", e.target.value); }}
+                style={inputStyle} />
               <p style={{ color: muted, fontSize: 11, margin: "5px 0 0" }}>
-                Entra no recibo depois de "referente à prestação de serviços técnicos para".
+                Vem no singular ou no plural conforme a quantidade de imóveis, mas você pode reescrever.
+              </p>
+            </div>
+
+            <div style={{ gridColumn: "1 / -1", background: bg, border: `1px solid ${line}`, borderRadius: 8, padding: "10px 12px" }}>
+              <p style={{ color: muted, fontSize: 11, margin: "0 0 5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                Como vai sair no recibo
+              </p>
+              <p style={{ color: ink, fontSize: 12, margin: 0, lineHeight: 1.6 }}>
+                referente à <strong>prestação de serviços técnicos para {data.servicos || "..."}</strong>
+                {data.complemento.trim() ? `, ${data.complemento.trim()}` : ""}{" "}
+                {data.relacao}
               </p>
             </div>
           </div>

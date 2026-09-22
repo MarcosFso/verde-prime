@@ -18,7 +18,7 @@ function esc(texto) {
 }
 
 export async function generateReciboWord(formData) {
-  const { nome_cliente, valor, servicos, imoveis, data } = formData;
+  const { nome_cliente, valor, servicos, complemento, relacao, imoveis, data } = formData;
 
   const imoveisValidos = (imoveis || []).filter((im) => (im.nome || "").trim());
 
@@ -34,23 +34,56 @@ export async function generateReciboWord(formData) {
   const mes = MESES[dataObj.getMonth()];
   const ano = dataObj.getFullYear();
 
+  const complementoTexto = (complemento || "").trim() ? `, ${esc(complemento.trim())}` : "";
+
+  // Linha pontilhada ligando o nome da fazenda à matrícula, que fica encostada
+  // na margem direita. Os pontos são cortados no tamanho exato do vão sobrando
+  // (overflow hidden) — mesmo efeito do "preenchimento pontilhado" do Word.
+  const PONTOS = ".".repeat(200);
+  // Acima disso o nome não cabe na mesma linha da matrícula; aí a linha vira um
+  // parágrafo comum, que quebra sozinho, em vez de estourar a margem direita.
+  const MAX_CHARS_LINHA_PONTILHADA = 38;
+
   const linhasImoveis = imoveisValidos
     .map((im) => {
+      const nomeTexto = im.nome.trim().toUpperCase();
+      const nome = `<span class="b">${esc(nomeTexto)}</span>`;
       const matricula = (im.matricula || "").trim();
-      const complemento = matricula ? ` – Matrícula nº <span class="bold">${esc(matricula)}</span>` : "";
-      return `<div class="imovel"><span class="bold">${esc(im.nome.trim().toUpperCase())}</span>${complemento};</div>`;
+      if (!matricula) {
+        return `<p class="imovel">${nome};</p>`;
+      }
+      if (nomeTexto.length > MAX_CHARS_LINHA_PONTILHADA) {
+        return `<p class="imovel">${nome} – Matrícula nº <span class="b">${esc(matricula)}</span>;</p>`;
+      }
+      // Uma tabela por imóvel: assim cada linha calcula o próprio vão. Numa
+      // tabela só, um nome comprido encolheria a coluna dos pontos de todas.
+      return `<table>
+        <tr>
+          <td class="nome">${nome}</td>
+          <td class="leader"><div>${PONTOS}</div></td>
+          <td class="mat">Matrícula nº <span class="b">${esc(matricula)}</span>;</td>
+        </tr>
+      </table>`;
     })
     .join("");
 
-  // Layout com posicionamento absoluto (nada de flexbox ou background-attachment:fixed,
-  // que renderizam de forma inconsistente na conversão para PDF via html2canvas).
+  // Medidas tiradas do modelo em Word do cliente: A4, margens de 30mm, Arial 12pt
+  // para tudo (inclusive o título), entrelinha 1,15 e uma linha em branco entre
+  // parágrafos. Layout em fluxo com posicionamento absoluto só para as imagens de
+  // fundo/rodapé — flexbox e background-attachment renderizam errado no html2canvas.
   const html = `
     <html>
       <head>
         <meta charset="UTF-8">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; color: #333; }
+
+          body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12pt;
+            line-height: 1.15;
+            color: #4D4D4F;
+          }
 
           .page {
             width: 210mm;
@@ -75,7 +108,7 @@ export async function generateReciboWord(formData) {
             position: relative;
             z-index: 1;
             width: 100%;
-            margin-top: 80px;
+            margin-top: 18mm;
           }
           .separator img {
             width: 100%;
@@ -86,64 +119,67 @@ export async function generateReciboWord(formData) {
           .content {
             position: relative;
             z-index: 1;
-            padding: 55px 50px 0 50px;
-            line-height: 1.8;
+            padding: 5mm 30mm 0 30mm;
           }
+
+          /* Uma linha em branco entre parágrafos, como no modelo. */
+          p { margin: 0 0 13.8pt; text-align: justify; }
 
           .title {
             text-align: center;
-            font-size: 22px;
             font-weight: bold;
-            margin-bottom: 34px;
-            letter-spacing: 1px;
-            color: #000;
+            margin-bottom: 41.4pt;
           }
 
-          .text {
-            font-size: 12px;
-            margin: 14px 0;
-            color: #000;
-            text-align: justify;
-            line-height: 1.8;
-          }
+          .b { font-weight: bold; }
 
-          .valor {
-            font-size: 14px;
-            font-weight: bold;
-            text-align: center;
-            color: #000;
-            margin: 22px 0;
-          }
+          /* Valor e data ficam à esquerda no modelo, não centralizados. */
+          .valor, .local { font-weight: bold; text-align: left; }
 
           .imoveis {
-            margin: 16px 0 16px 28px;
+            margin: 0 0 13.8pt 12.7mm;
           }
-          .imovel {
-            font-size: 12px;
-            color: #000;
-            line-height: 2;
+          .imoveis table {
+            border-collapse: collapse;
+            width: 100%;
           }
-
-          .bold { font-weight: bold; }
-          .center { text-align: center; }
+          .imoveis .imovel {
+            margin: 0;
+            text-align: left;
+          }
+          .imoveis td {
+            padding: 0;
+            vertical-align: bottom;
+            white-space: nowrap;
+            text-align: left;
+          }
+          .imoveis td.leader {
+            width: 100%;
+            position: relative;
+            /* Garante um vão mínimo mesmo quando o nome ocupa a linha toda. */
+            padding: 0 5pt;
+          }
+          /* Fora do fluxo, os pontos não empurram a matrícula: eles só preenchem
+             o vão que sobrou e são cortados no limite exato da célula. */
+          .imoveis td.leader > div {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            letter-spacing: 1.5pt;
+            line-height: 1.15;
+          }
 
           .signature {
-            margin-top: 46px;
             text-align: center;
+            margin-top: 41.4pt;
           }
+          .signature p { margin: 0; text-align: center; }
 
-          .line {
-            border-top: 1.5px solid #333;
-            width: 300px;
-            margin: 0 auto 6px;
-          }
-
-          .sig-name {
-            font-size: 12px;
-            font-weight: bold;
-            margin: 0;
-            line-height: 1.6;
-          }
+          .pix { margin-top: 27.6pt; }
+          .pix p { margin: 0; text-align: left; }
 
           .footer {
             position: absolute;
@@ -170,27 +206,30 @@ export async function generateReciboWord(formData) {
           </div>
 
           <div class="content">
-            <div class="title">RECIBO DE PRESTAÇÃO DE SERVIÇOS</div>
+            <p class="title">RECIBO DE PRESTAÇÃO DE SERVIÇOS</p>
 
-            <div class="text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="bold">VERDE PRIME CONSULTORIA AMBIENTAL</span>, declara, para os devidos fins, que recebeu de <span class="bold">${esc(nome_cliente)}</span>, a importância de:</div>
+            <p><span class="b">VERDE PRIME CONSULTORIA AMBIENTAL</span>, declara, para os devidos fins, que recebeu de <span class="b">${esc(nome_cliente)}</span>, a importância de:</p>
 
-            <div class="valor">R$ ${formatCurrencyDigits(valor)} (${valorEmPalavras(valor)})</div>
+            <p class="valor">R$ ${formatCurrencyDigits(valor)} (${valorEmPalavras(valor)})</p>
 
-            <div class="text">referente à prestação de serviços técnicos para <span class="bold">${esc(servicos)}</span>, relacionados aos seguintes imóveis rurais:</div>
+            <p>referente à <span class="b">prestação de serviços técnicos para ${esc(servicos)}</span>${complementoTexto} ${esc(relacao || "relacionados aos seguintes imóveis rurais:")}</p>
 
             <div class="imoveis">${linhasImoveis}</div>
 
-            <div class="text">&nbsp;&nbsp;&nbsp;&nbsp;O valor acima foi <span class="bold">integralmente recebido</span>, dando-se quitação referente aos serviços descritos neste recibo.</div>
+            <p>O valor acima foi <span class="b">integralmente recebido</span>, dando-se quitação referente aos serviços descritos neste recibo.</p>
 
-            <div class="text center" style="margin-top: 34px;">${CIDADE}, ${dia} de ${mes} de ${ano}.</div>
+            <p class="local">${CIDADE}, ${dia} de ${mes} de ${ano}.</p>
 
             <div class="signature">
-              <div class="line"></div>
-              <div class="sig-name">VERDE PRIME CONSULTORIA AMBIENTAL</div>
-              <div class="sig-name">MARCOS DIVINO RIBEIRO DE ARAÚJO</div>
-              <div class="sig-name">ENGENHEIRO AMBIENTAL</div>
-              <div class="sig-name">CREA-MG nº 142371881-0</div>
-              <div class="sig-name">Pix: 38 999738654</div>
+              <p>VERDE PRIME CONSULTORIA AMBIENTAL</p>
+              <p>MARCOS DIVINO RIBEIRO DE ARAÚJO</p>
+              <p>ENGENHEIRO AMBIENTAL</p>
+              <p>CREA-MG nº 142371881-0</p>
+            </div>
+
+            <div class="pix">
+              <p>Pix:</p>
+              <p>38 999738654</p>
             </div>
           </div>
 
