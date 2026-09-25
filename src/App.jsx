@@ -302,6 +302,7 @@ export default function App() {
           editing={editing}
           setEditing={setEditing}
           userId={session.user.id}
+          showToast={showToast}
           onCancel={() => { setView("list"); setEditing(null); }}
           onSave={saveRecord}
           onDuplicate={async () => {

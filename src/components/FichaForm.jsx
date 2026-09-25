@@ -12,7 +12,11 @@ import logo from "../assets/logo.png";
 
 const { ink, muted, line, bg, pageBg, card, cardGlass, brand, brandDark, amber, danger } = THEME;
 
-export default function FichaForm({ editing, setEditing, userId, onCancel, onSave, onDuplicate }) {
+// Limite por documento. O bucket do Supabase aceita bem mais, mas vale conter:
+// o plano gratuito tem 1 GB de armazenamento no total.
+const MAX_DOC_MB = 25;
+
+export default function FichaForm({ editing, setEditing, userId, onCancel, onSave, onDuplicate, showToast }) {
   const [openSections, setOpenSections] = useState({ cabecalho: true, proprietario: true });
   const [uploading, setUploading] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
@@ -68,6 +72,10 @@ export default function FichaForm({ editing, setEditing, userId, onCancel, onSav
     });
   };
 
+  // Antes, arquivo grande e falha de envio eram descartados em silêncio: quem
+  // estava usando clicava, nada acontecia e não havia como saber o motivo.
+  const avisar = (msg, tipo = "error") => (showToast ? showToast(msg, tipo) : alert(msg));
+
   const processPhotoFiles = async (files) => {
     setUploading(true);
     for (const file of files) {
@@ -78,6 +86,7 @@ export default function FichaForm({ editing, setEditing, userId, onCancel, onSav
         setEditing((prev) => ({ ...prev, fotos: [...(prev.fotos || []), { path, name, url }] }));
       } catch (err) {
         console.error(err);
+        avisar(`Não foi possível enviar a foto "${file.name}": ${err?.message || "tente de novo."}`);
       }
     }
     setUploading(false);
@@ -86,13 +95,18 @@ export default function FichaForm({ editing, setEditing, userId, onCancel, onSav
   const processDocFiles = async (files) => {
     setUploading(true);
     for (const file of files) {
-      if (file.size > 8 * 1024 * 1024) continue;
+      if (file.size > MAX_DOC_MB * 1024 * 1024) {
+        const tamanho = (file.size / (1024 * 1024)).toFixed(1);
+        avisar(`"${file.name}" tem ${tamanho} MB e o limite é ${MAX_DOC_MB} MB. Reduza o arquivo e tente de novo.`);
+        continue;
+      }
       try {
         const { path, name } = await uploadAttachment(userId, file, file.name);
         const url = await getSignedUrl(path).catch(() => null);
         setEditing((prev) => ({ ...prev, documentos: [...(prev.documentos || []), { path, name, size: file.size, url }] }));
       } catch (err) {
         console.error(err);
+        avisar(`Não foi possível enviar "${file.name}": ${err?.message || "tente de novo."}`);
       }
     }
     setUploading(false);
@@ -274,7 +288,7 @@ export default function FichaForm({ editing, setEditing, userId, onCancel, onSav
                 borderRadius: 10, border: `2px dashed ${dragDoc ? "#7A4FA3" : line}`, fontSize: 12.5, color: muted, cursor: "pointer",
                 background: dragDoc ? "rgba(122,79,163,0.08)" : "transparent", transition: "background .15s ease, border-color .15s ease" }}>
               <UploadCloud size={22} color={dragDoc ? "#7A4FA3" : muted} />
-              {uploading ? "Enviando..." : "Arraste documentos aqui ou clique para selecionar (máx. 8MB cada)"}
+              {uploading ? "Enviando..." : `Arraste documentos aqui ou clique para selecionar (máx. ${MAX_DOC_MB}MB cada)`}
               <input type="file" multiple onChange={handleDocUpload} style={{ display: "none" }} disabled={uploading} />
             </label>
           </div>
