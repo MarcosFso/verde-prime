@@ -379,13 +379,67 @@ input:focus, textarea:focus, select:focus {
   z-index: 5;
 }
 
-.vp-sidebar-logo {
-  width: 128px;
-  margin: 0 auto 30px;
-  display: block;
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.3));
+.vp-sidebar-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 30px;
   position: relative;
   z-index: 1;
+}
+
+.vp-sidebar-logo {
+  width: 128px;
+  display: block;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.3));
+  min-width: 0;
+}
+
+.vp-sidebar-toggle {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.vp-sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+/* Recolhida: só os ícones, com o texto escondido. O título de cada botão
+   continua aparecendo ao passar o mouse, pra não virar adivinhação. */
+.vp-sidebar-collapsed {
+  width: 74px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.vp-sidebar-collapsed .vp-sidebar-logo {
+  display: none;
+}
+.vp-sidebar-collapsed .vp-sidebar-head {
+  justify-content: center;
+}
+.vp-sidebar-collapsed .vp-sidebar-link,
+.vp-sidebar-collapsed .vp-sidebar-user {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+.vp-sidebar-collapsed .vp-sidebar-link span,
+.vp-sidebar-collapsed .vp-sidebar-user > span:not(.vp-sidebar-avatar) {
+  display: none;
+}
+.vp-sidebar-collapsed .vp-sidebar-link-active {
+  box-shadow: inset 0 -2px 0 var(--vp-amber);
 }
 
 .vp-sidebar-nav {
@@ -481,6 +535,22 @@ input:focus, textarea:focus, select:focus {
     gap: 14px;
     overflow-x: auto;
     z-index: 20;
+  }
+  /* No celular a barra já é horizontal e compacta: recolher não faz sentido,
+     então o botão sai de cena e o estado recolhido é ignorado. */
+  .vp-sidebar-toggle {
+    display: none;
+  }
+  .vp-sidebar-collapsed {
+    width: 100%;
+    padding: 10px 14px;
+  }
+  .vp-sidebar-collapsed .vp-sidebar-logo {
+    display: block;
+  }
+  .vp-sidebar-head {
+    margin-bottom: 0;
+    gap: 0;
   }
   .vp-sidebar-logo {
     width: 38px;

@@ -46,7 +46,7 @@ export default function UsersAdmin({ profiles, currentUserId, onRefresh }) {
         position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
         width: 420, opacity: 0.04, zIndex: 0, pointerEvents: "none", userSelect: "none",
       }} />
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: 24, position: "relative", zIndex: 1 }}>
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: 24, position: "relative", zIndex: 1 }}>
         <div style={{ marginBottom: 20 }}>
           <h1 style={{ fontSize: 24, margin: 0, fontFamily: "var(--vp-font-heading)", color: ink, display: "flex", alignItems: "center", gap: 10 }}><Users size={22} /> Usuários</h1>
           <p style={{ color: muted, fontSize: 12.5, margin: "4px 0 0" }}>

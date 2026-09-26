@@ -145,7 +145,7 @@ export default function FinanceiroView({ fichas, onBack, onOpenFicha, onSaveCadi
 
   return (
     <div className="vp-fade-in" style={{ fontFamily: "var(--vp-font-body)" }}>
-      <div style={{ maxWidth: 960, margin: "0 auto", padding: 24 }}>
+      <div style={{ maxWidth: 1300, margin: "0 auto", padding: 24 }}>
         <div style={{ marginBottom: 20 }}>
           <h1 style={{ fontSize: 24, margin: 0, fontFamily: "var(--vp-font-heading)", color: ink, display: "flex", alignItems: "center", gap: 10 }}><DollarSign size={22} /> Financeiro</h1>
           <p style={{ color: muted, fontSize: 12.5, margin: "4px 0 0" }}>Saldo, recebimentos, despesas e cadista das fichas ativas.</p>

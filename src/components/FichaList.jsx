@@ -42,7 +42,7 @@ export default function FichaList({
 
   return (
     <div className="vp-fade-in" style={{ fontFamily: "var(--vp-font-body)" }}>
-      <div style={{ maxWidth: 1040, margin: "0 auto", padding: 24 }}>
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12, flexWrap: "wrap", marginBottom: 18 }}>
           <div>
             <h1 style={{ fontSize: 24, color: ink, margin: 0, fontFamily: "var(--vp-font-heading)" }}>Fichas Técnicas</h1>
