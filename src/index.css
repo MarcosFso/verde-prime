@@ -397,6 +397,8 @@ input:focus, textarea:focus, select:focus {
 
 .vp-sidebar-toggle {
   flex-shrink: 0;
+  /* Empurra o botão para a borda direita da barra, longe da logo. */
+  margin-left: auto;
   width: 30px;
   height: 30px;
   border-radius: 8px;
@@ -427,6 +429,10 @@ input:focus, textarea:focus, select:focus {
 }
 .vp-sidebar-collapsed .vp-sidebar-head {
   justify-content: center;
+}
+/* Recolhida não há logo, então o botão volta ao centro da coluna. */
+.vp-sidebar-collapsed .vp-sidebar-toggle {
+  margin-left: 0;
 }
 .vp-sidebar-collapsed .vp-sidebar-link,
 .vp-sidebar-collapsed .vp-sidebar-user {
