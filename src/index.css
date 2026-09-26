@@ -399,21 +399,23 @@ input:focus, textarea:focus, select:focus {
   flex-shrink: 0;
   /* Empurra o botão para a borda direita da barra, longe da logo. */
   margin-left: auto;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
   border: none;
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.9);
+  /* Seta discreta, sem caixa de fundo. */
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
 .vp-sidebar-toggle:hover {
-  background: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.12);
   color: #fff;
 }
 

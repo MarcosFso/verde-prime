@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutList, DollarSign, Users, LogOut, Sun, Moon, Crown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { LayoutList, DollarSign, Users, LogOut, Sun, Moon, Crown, ChevronLeft, ChevronRight } from "lucide-react";
 import { THEME } from "../config/sections";
 import { getTheme, toggleTheme } from "../utils/theme";
 import PageBackground from "./PageBackground";
@@ -40,7 +40,7 @@ export default function AppShell({ view, onNavigate, isAdmin, currentUsername, o
           <button onClick={toggleSidebar} className="vp-sidebar-toggle"
             title={collapsed ? "Expandir menu" : "Recolher menu"}
             aria-label={collapsed ? "Expandir menu" : "Recolher menu"}>
-            {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+            {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>
         </div>
         <nav className="vp-sidebar-nav">
