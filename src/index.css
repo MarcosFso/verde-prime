@@ -61,6 +61,14 @@ input[type="password"]::-ms-clear {
   display: none;
 }
 
+/* O navegador usa fonte monoespaçada por padrão em textarea, o que destoava
+   do resto da interface. Aqui todos os campos herdam a fonte do app. */
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
 /* ---------- animations ---------- */
 
 @keyframes vp-fade-in {

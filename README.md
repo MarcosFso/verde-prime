@@ -4,6 +4,25 @@ Sistema web full-stack para gestão de fichas técnicas de consultoria ambiental
 
 **🔗 Demo ao vivo:** [verde-prime.vercel.app](https://verde-prime.vercel.app)
 
+### 👤 Entre e experimente
+
+Há uma conta pública de demonstração, com três fichas fictícias, para você navegar pelo sistema sem precisar se cadastrar:
+
+| | |
+| --- | --- |
+| **E-mail** | `teste@gmail.com` |
+| **Senha** | `12345678` |
+
+Nenhum dado real aparece ali: os CPFs foram gerados para passar na validação, os e-mails usam o domínio `example.com` (reservado para documentação) e os nomes não correspondem a ninguém. A conta é de usuário comum, sem privilégio de administrador — as políticas de Row Level Security do banco garantem que ela veja apenas as próprias fichas.
+
+## 📸 Telas
+
+| Lista de fichas | Ficha técnica |
+| --- | --- |
+| ![Lista de fichas](docs/screenshots/01-fichas.webp) | ![Ficha técnica](docs/screenshots/02-ficha.png) |
+| **Painel financeiro** | **Recibo gerado em PDF** |
+| ![Painel financeiro](docs/screenshots/03-financeiro.png) | ![Recibo em PDF](docs/screenshots/04-recibo.jpg) |
+
 ## 🛠️ Tecnologias
 
 - **Frontend:** React 18, Vite, CSS puro (sem framework de UI)
