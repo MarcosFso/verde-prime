@@ -108,6 +108,13 @@ export async function saveFicha(record, ownerId, actingUser) {
   const payload = sanitizeForDb({ ...record, historico: [...(record.historico || []), histEntry] });
   delete payload._owner_username;
 
+  // Estas duas colunas têm dono próprio: `recibos` só é escrita ao emitir um
+  // recibo e `excluido_em` só pela lixeira. Se o formulário as enviasse, um
+  // rascunho antigo restaurado apagaria um recibo registrado depois — ou
+  // traria de volta uma ficha que já tinha sido removida.
+  delete payload.recibos;
+  delete payload.excluido_em;
+
   if (record.id) {
     const { error } = await sb.from("fichas").update(payload).eq("id", record.id);
     if (error) throw error;

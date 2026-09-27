@@ -18,6 +18,26 @@ import ConfirmModal from "./components/ConfirmModal";
 
 const DRAFT_KEY_PREFIX = "vp_draft_";
 
+/**
+ * Apaga todos os rascunhos guardados no navegador.
+ *
+ * Varre por prefixo em vez de apagar uma chave só: um administrador que navega
+ * entre usuários gera um rascunho por contexto, e nenhum deles pode sobreviver
+ * ao logout, porque contêm dados pessoais de clientes.
+ */
+function limparTodosOsRascunhos() {
+  try {
+    const chaves = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(DRAFT_KEY_PREFIX)) chaves.push(k);
+    }
+    chaves.forEach((k) => localStorage.removeItem(k));
+  } catch (e) {
+    // Navegador sem acesso ao armazenamento: nada a limpar.
+  }
+}
+
 export default function App() {
   const [booted, setBooted] = useState(false);
   const [session, setSession] = useState(null);
@@ -180,10 +200,16 @@ export default function App() {
     }, 1500);
   };
   const handleLogout = async () => {
+    // O rascunho automático guarda a ficha inteira (nome, CPF, telefone e e-mail
+    // do cliente) no navegador. Se ficasse aqui depois do logout, a próxima
+    // pessoa a usar o computador leria esses dados sem precisar de senha — o que
+    // anularia o logout por inatividade em máquina compartilhada.
+    limparTodosOsRascunhos();
     await api.signOut();
     setSession(null);
     setProfile(null);
     setFichas([]);
+    setFichasExcluidas([]);
     setAdminViewUser(null);
   };
 

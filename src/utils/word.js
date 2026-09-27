@@ -3,19 +3,12 @@ import separadorImg from "../assets/recibo_separador.png";
 import rodapeImg from "../assets/recibo_rodape.png";
 import { formatCurrencyDigits } from "./masks";
 import { valorEmPalavras } from "./extenso";
+import { escapeHtml as esc } from "./html";
 
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
 // A sede da Verde Prime não muda, então a cidade do recibo é fixa.
 const CIDADE = "Formoso/MG";
-
-/** Evita que um texto digitado pelo usuário quebre o HTML do recibo. */
-function esc(texto) {
-  return String(texto ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
 
 export async function generateReciboWord(formData) {
   const { nome_cliente, valor, servicos, complemento, relacao, imoveis, data } = formData;

@@ -43,7 +43,10 @@ Nenhum dado real aparece ali: os CPFs foram gerados para passar na validação, 
 - **Controle financeiro por ficha** — valor do serviço, pagamentos parcelados com data, cálculo automático de saldo a receber
 - **Painel financeiro consolidado** — saldo, recebido, a receber, despesas, gráfico de recebimentos por mês
 - **Anexos** — fotos (com compressão automática) e documentos, armazenados de forma privada por usuário no Supabase Storage
-- **Geração de PDF** — recibo de pagamento personalizado e exportação completa da ficha
+- **Geração de PDF** — recibo de prestação de serviços reproduzido a partir do modelo em uso pela empresa (fonte, margens e posição de cada bloco medidos do documento original) e exportação completa da ficha
+- **Histórico de recibos** — cada recibo emitido fica registrado na ficha, com valor, cliente e data
+- **Lixeira** — fichas removidas podem ser restauradas; a exclusão definitiva é uma segunda ação, dentro da lixeira
+- **Arquivamento** de fichas encerradas, separado da lista ativa
 - **Modo escuro / claro**
 - **Modo offline (PWA)** — o app abre mesmo sem conexão; dados sincronizam quando a internet volta
 - **Rascunho automático** — o formulário salva sozinho enquanto você digita
@@ -53,6 +56,16 @@ Nenhum dado real aparece ali: os CPFs foram gerados para passar na validação, 
 ## 🔒 Segurança
 
 O banco de dados usa **Row Level Security (RLS)** do PostgreSQL/Supabase: as regras de acesso são aplicadas diretamente no banco, não apenas na interface. Isso significa que mesmo que alguém tente acessar a API diretamente (fora da tela), as permissões continuam sendo respeitadas — usuários comuns só veem os próprios dados, administradores têm acesso ampliado via políticas específicas para cada tabela (fichas, despesas, perfis e arquivos anexados).
+
+É por isso que a chave pública do Supabase pode viajar no JavaScript do site: ela não concede acesso a nada por si só. Quem decide o que cada usuário pode ler ou gravar é o banco.
+
+Outras decisões de segurança e privacidade do projeto:
+
+- **Nenhuma credencial no repositório.** As chaves ficam em variáveis de ambiente, configuradas no painel da hospedagem. O `.env.example` traz só os nomes dos campos.
+- **Escape de HTML na geração de PDF.** Os PDFs são montados como HTML e renderizados no DOM, então todo valor digitado pelo usuário passa por uma função de escape antes de entrar no documento — caso contrário, uma tag inserida num campo da ficha poderia executar script na sessão de quem gera o PDF, inclusive a do administrador.
+- **Rascunhos apagados no logout.** O formulário salva sozinho no navegador enquanto é preenchido, mas esse rascunho é descartado ao sair — ele contém dados pessoais de clientes e o sistema roda em computador compartilhado.
+- **Logout automático por inatividade**, pelo mesmo motivo.
+- **Anexos privados.** Fotos e documentos ficam num bucket fechado, acessados por links assinados temporários, nunca por URL pública.
 
 ## 📁 Estrutura do projeto
 

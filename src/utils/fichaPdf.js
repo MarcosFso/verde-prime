@@ -1,17 +1,18 @@
 import { SECTIONS } from "../config/sections";
 import { formatCurrencyDigits } from "./masks";
 import logo from "../assets/logo.png";
+import { escapeHtml as esc } from "./html";
 
 function fieldDisplayValue(field, record) {
   const raw = record[field.id];
   if (field.type === "checkboxGroup") {
     const arr = raw || [];
     if (!arr.length) return "—";
-    return arr.map((v) => (field.options.find(([val]) => val === v) || [v, v])[1]).join(", ");
+    return esc(arr.map((v) => (field.options.find(([val]) => val === v) || [v, v])[1]).join(", "));
   }
   if (field.type === "select") {
     if (!raw) return "—";
-    return (field.options.find(([val]) => val === raw) || [raw, raw])[1];
+    return esc((field.options.find(([val]) => val === raw) || [raw, raw])[1]);
   }
   if (field.type === "date") {
     if (!raw) return "—";
@@ -21,7 +22,7 @@ function fieldDisplayValue(field, record) {
     return `R$ ${formatCurrencyDigits(raw || 0)}`;
   }
   if (raw === "" || raw === null || raw === undefined) return "—";
-  return String(raw);
+  return esc(raw);
 }
 
 export async function generateFichaPDF(record) {
@@ -71,7 +72,7 @@ export async function generateFichaPDF(record) {
           <div class="header">
             <img src="${logo}" alt="Verde Prime" />
             <div>
-              <h1>Ficha Técnica — ${record.nome || "Sem nome"}</h1>
+              <h1>Ficha Técnica — ${esc(record.nome || "Sem nome")}</h1>
               <p>Cadastro Ambiental Rural (CAR) — Verde Prime Consultoria Ambiental</p>
             </div>
           </div>
