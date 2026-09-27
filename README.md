@@ -85,6 +85,8 @@ npm run build
 ```
 Gera a pasta `dist/`, pronta para qualquer hospedagem estática (Vercel, Netlify, Cloudflare Pages). Configure as variáveis de ambiente (`VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`) no painel do serviço escolhido.
 
+O projeto está publicado na Vercel, com **deploy automático a cada push** na branch principal: o serviço compila e publica sozinho, sem etapa manual.
+
 ---
 
 *Projeto desenvolvido e mantido de ponta a ponta — banco de dados, autenticação, regras de segurança e interface.*
