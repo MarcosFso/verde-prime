@@ -1,5 +1,8 @@
 # 🌿 Verde Prime — Sistema de Fichas Técnicas
 
+[![CI](https://github.com/MarcosFso/verde-prime/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcosFso/verde-prime/actions/workflows/ci.yml)
+[![Licença: MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-green.svg)](LICENSE)
+
 Sistema web full-stack para gestão de fichas técnicas de consultoria ambiental (Cadastro Ambiental Rural — CAR), desenvolvido para uso real por uma empresa de consultoria ambiental. Multi-usuário, com controle financeiro, geração de documentos em PDF e modo offline.
 
 **🔗 Demo ao vivo:** [verde-prime.vercel.app](https://verde-prime.vercel.app)
@@ -78,6 +81,16 @@ src/
    ```
    O site abre em `http://localhost:5173`.
 
+## 🧪 Testes
+
+```bash
+npm test
+```
+
+São 34 testes cobrindo as regras de negócio que não podem errar: a escrita de valores por extenso no recibo (`mil e quinhentos reais`, incluindo casos como `um milhão de reais`), a validação de CPF e CNPJ pelos dígitos verificadores, as máscaras de telefone e moeda, e a classificação de pagamento de cada ficha em pendente, parcial ou pago.
+
+A cada push, o GitHub Actions roda o lint, os testes e o build — é o que o selo no topo deste arquivo indica.
+
 ## 📦 Deploy
 
 ```bash
@@ -86,6 +99,10 @@ npm run build
 Gera a pasta `dist/`, pronta para qualquer hospedagem estática (Vercel, Netlify, Cloudflare Pages). Configure as variáveis de ambiente (`VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`) no painel do serviço escolhido.
 
 O projeto está publicado na Vercel, com **deploy automático a cada push** na branch principal: o serviço compila e publica sozinho, sem etapa manual.
+
+## 📄 Licença
+
+Distribuído sob a licença MIT. Veja [LICENSE](LICENSE).
 
 ---
 
