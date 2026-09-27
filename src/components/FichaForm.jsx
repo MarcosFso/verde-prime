@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { X, Download, Copy, UploadCloud, FileDown, Loader2 } from "lucide-react";
 import { SECTIONS, THEME } from "../config/sections";
-import FieldInput from "./FieldInput";
+import FieldInput, { FieldLabel } from "./FieldInput";
 import Icon from "./Icon";
 import PagamentosField from "./PagamentosField";
 import { compressImage } from "../utils/image";
@@ -207,6 +207,31 @@ export default function FichaForm({ editing, setEditing, userId, onCancel, onSav
                       </div>
                       <FieldInput field={s.fields.find((f) => f.id === "observacoes_financeiro")} value={editing.observacoes_financeiro} accent={s.accent}
                         onChange={(val) => setField("observacoes_financeiro", val)} />
+
+                      {/* Recibos já emitidos. Só de leitura: o registro é criado
+                          automaticamente quando um recibo é gerado. */}
+                      {(editing.recibos || []).length > 0 && (
+                        <div>
+                          <FieldLabel>Recibos emitidos</FieldLabel>
+                          <div style={{ border: `1px solid ${line}`, borderRadius: 8, overflow: "hidden" }}>
+                            {[...editing.recibos].reverse().map((r, i) => (
+                              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+                                padding: "10px 12px", borderBottom: i < editing.recibos.length - 1 ? `1px solid ${line}` : "none", flexWrap: "wrap", rowGap: 4 }}>
+                                <div style={{ minWidth: 0 }}>
+                                  <span style={{ fontWeight: 700, color: ink, fontSize: 13 }}>{formatBRL(r.valor)}</span>
+                                  <span style={{ color: muted, fontSize: 12 }}>
+                                    {r.cliente ? ` · ${r.cliente}` : ""}
+                                    {r.imoveis && r.imoveis.length ? ` · ${r.imoveis.join(", ")}` : ""}
+                                  </span>
+                                </div>
+                                <span style={{ color: muted, fontSize: 11.5, whiteSpace: "nowrap" }}>
+                                  emitido em {r.ts || "—"}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>

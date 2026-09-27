@@ -34,9 +34,11 @@ export default function App() {
   const [statusFilter, setStatusFilter] = useState("");
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
   const [adminViewUser, setAdminViewUser] = useState(null);
   const [pendingDraft, setPendingDraft] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [confirmPurge, setConfirmPurge] = useState(null);
   const [toast, setToast] = useState("");
   const [toastType, setToastType] = useState("default");
   const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
@@ -117,6 +119,25 @@ export default function App() {
   }, [session, adminViewUser, targetOwnerId]);
 
   useEffect(() => { reloadFichas(); }, [reloadFichas]);
+
+  // ---------- lixeira ----------
+  // Carregada só quando o usuário abre a lixeira, pra não pesar a lista normal.
+  const [fichasExcluidas, setFichasExcluidas] = useState([]);
+  const [loadingTrash, setLoadingTrash] = useState(false);
+  const reloadTrash = useCallback(async () => {
+    if (!session) return;
+    setLoadingTrash(true);
+    try {
+      const list = await api.fetchFichasExcluidas({ ownerId: targetOwnerId(), allUsers: adminViewUser === "ALL" });
+      setFichasExcluidas(list);
+    } catch (e) {
+      showToast("Erro ao carregar a lixeira.", "error");
+    } finally {
+      setLoadingTrash(false);
+    }
+  }, [session, adminViewUser, targetOwnerId]);
+
+  useEffect(() => { if (showTrash) reloadTrash(); }, [showTrash, reloadTrash]);
 
   // ---------- auth handlers ----------
   const handleSignUp = async (email, password, username) => {
@@ -244,8 +265,32 @@ export default function App() {
   const confirmDeleteFicha = async () => {
     const c = confirmDelete;
     setConfirmDelete(null);
-    try { await api.deleteFicha(c.id); showToast("Ficha removida.", "success"); reloadFichas(); }
-    catch (e) { showToast("Erro ao remover.", "error"); }
+    try {
+      await api.moveFichaToTrash(c, currentUsername);
+      showToast("Ficha movida para a lixeira.", "success");
+      reloadFichas();
+      if (showTrash) reloadTrash();
+    } catch (e) { showToast("Erro ao mover para a lixeira.", "error"); }
+  };
+
+  const doRestore = async (c) => {
+    try {
+      await api.restoreFicha(c, currentUsername);
+      showToast("Ficha restaurada.", "success");
+      reloadTrash();
+      reloadFichas();
+    } catch (e) { showToast("Erro ao restaurar.", "error"); }
+  };
+
+  const doPurge = (c) => setConfirmPurge(c);
+  const confirmPurgeFicha = async () => {
+    const c = confirmPurge;
+    setConfirmPurge(null);
+    try {
+      await api.deleteFicha(c.id);
+      showToast("Ficha excluída definitivamente.", "success");
+      reloadTrash();
+    } catch (e) { showToast("Erro ao excluir.", "error"); }
   };
   const doDuplicate = async (c) => {
     try { await api.duplicateFicha(c, currentUsername); showToast("Ficha duplicada.", "success"); reloadFichas(); }
@@ -292,7 +337,8 @@ export default function App() {
   }
 
   if (reciboRecord) {
-    return <ReciboModal ficha={reciboRecord} onClose={() => setReciboRecord(null)} />;
+    // Recarrega ao fechar, porque o modal pode ter registrado um recibo na ficha.
+    return <ReciboModal ficha={reciboRecord} onClose={() => { setReciboRecord(null); reloadFichas(); }} />;
   }
 
   if (view === "form" && editing) {
@@ -361,6 +407,9 @@ export default function App() {
         overdueOnly={overdueOnly} setOverdueOnly={setOverdueOnly}
         showArchived={showArchived} setShowArchived={setShowArchived}
         archivedCount={archivedCount}
+        showTrash={showTrash} setShowTrash={setShowTrash}
+        fichasExcluidas={fichasExcluidas} loadingTrash={loadingTrash}
+        onRestore={doRestore} onPurge={doPurge}
         currentUsername={currentUsername} isAdmin={isAdmin} profiles={profiles}
         adminViewUser={adminViewUser} setAdminViewUser={setAdminViewUser}
         onNew={openNew} onOpen={openEdit} onDuplicate={doDuplicate}
@@ -378,11 +427,20 @@ export default function App() {
       {toast && <Toast msg={toast} type={toastType} />}
       {confirmDelete && (
         <ConfirmModal
-          title="Excluir ficha"
-          message={`Remover permanentemente a ficha de "${confirmDelete.nome}"? Essa ação não pode ser desfeita.`}
-          confirmLabel="Excluir"
+          title="Mover para a lixeira"
+          message={`Mover a ficha de "${confirmDelete.nome}" para a lixeira? Ela sai da lista, mas você pode restaurá-la depois.`}
+          confirmLabel="Mover para a lixeira"
           onCancel={() => setConfirmDelete(null)}
           onConfirm={confirmDeleteFicha}
+        />
+      )}
+      {confirmPurge && (
+        <ConfirmModal
+          title="Excluir definitivamente"
+          message={`Excluir para sempre a ficha de "${confirmPurge.nome}"? Essa ação não pode ser desfeita.`}
+          confirmLabel="Excluir para sempre"
+          onCancel={() => setConfirmPurge(null)}
+          onConfirm={confirmPurgeFicha}
         />
       )}
     </AppShell>

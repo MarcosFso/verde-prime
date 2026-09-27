@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Download, Receipt, X, Loader2, Plus, Trash2, MapPin } from "lucide-react";
 import { THEME } from "../config/sections";
 import { FieldLabel } from "./FieldInput";
-import { formatCurrencyDigits, parseCurrencyInput } from "../utils/masks";
+import { formatCurrencyDigits, parseCurrencyInput, nowStr } from "../utils/masks";
 import { valorEmPalavras } from "../utils/extenso";
 import { generateReciboWord } from "../utils/word";
+import { registrarRecibo } from "../api";
 
 const SERVICOS_PADRAO = "desmembramento, Cadastro Ambiental Rural – CAR";
 const COMPLEMENTO_PADRAO = "bem como ajustamento de áreas";
@@ -60,6 +61,24 @@ export default function ReciboModal({ ficha, onClose }) {
     setGenerating(true);
     try {
       await generateReciboWord(data);
+
+      // Guarda o registro na ficha, pro seu pai saber depois o que já foi emitido.
+      // Se falhar, o PDF já foi baixado — então avisa, mas não trata como erro fatal.
+      if (ficha.id) {
+        try {
+          await registrarRecibo(ficha, {
+            ts: nowStr(),
+            valor: data.valor,
+            cliente: data.nome_cliente,
+            data: data.data,
+            imoveis: data.imoveis.filter((im) => (im.nome || "").trim()).map((im) => im.nome.trim()),
+          });
+        } catch (err) {
+          console.error(err);
+          alert("O PDF foi gerado, mas não conseguimos registrar este recibo no histórico da ficha.");
+        }
+      }
+
       onClose();
     } catch (err) {
       console.error(err);

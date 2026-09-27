@@ -78,7 +78,25 @@ export async function acceptTerms(userId) {
 // ---------------- FICHAS ----------------
 
 export async function fetchFichas({ ownerId, allUsers }) {
-  let query = sb.from("fichas").select("*").order("criado_em", { ascending: false });
+  // Fichas na lixeira (excluido_em preenchido) ficam fora da lista normal.
+  let query = sb
+    .from("fichas")
+    .select("*")
+    .is("excluido_em", null)
+    .order("criado_em", { ascending: false });
+  if (!allUsers) query = query.eq("owner_id", ownerId);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+/** Só as fichas que estão na lixeira, da mais recente para a mais antiga. */
+export async function fetchFichasExcluidas({ ownerId, allUsers }) {
+  let query = sb
+    .from("fichas")
+    .select("*")
+    .not("excluido_em", "is", null)
+    .order("excluido_em", { ascending: false });
   if (!allUsers) query = query.eq("owner_id", ownerId);
   const { data, error } = await query;
   if (error) throw error;
@@ -102,9 +120,40 @@ export async function saveFicha(record, ownerId, actingUser) {
   }
 }
 
+/** Manda a ficha para a lixeira. Nada é apagado: dá para restaurar depois. */
+export async function moveFichaToTrash(record, actingUser) {
+  const histEntry = { ts: nowStr(), user: actingUser, action: "Movida para a lixeira" };
+  const payload = {
+    excluido_em: new Date().toISOString(),
+    historico: [...(record.historico || []), histEntry],
+  };
+  const { error } = await sb.from("fichas").update(payload).eq("id", record.id);
+  if (error) throw error;
+}
+
+/** Tira a ficha da lixeira e devolve para a lista ativa. */
+export async function restoreFicha(record, actingUser) {
+  const histEntry = { ts: nowStr(), user: actingUser, action: "Restaurada da lixeira" };
+  const payload = {
+    excluido_em: null,
+    historico: [...(record.historico || []), histEntry],
+  };
+  const { error } = await sb.from("fichas").update(payload).eq("id", record.id);
+  if (error) throw error;
+}
+
+/** Apaga de verdade, sem volta. Só é oferecido de dentro da lixeira. */
 export async function deleteFicha(id) {
   const { error } = await sb.from("fichas").delete().eq("id", id);
   if (error) throw error;
+}
+
+/** Guarda na ficha o registro de um recibo emitido. */
+export async function registrarRecibo(record, recibo) {
+  const lista = [...(record.recibos || []), recibo];
+  const { error } = await sb.from("fichas").update({ recibos: lista }).eq("id", record.id);
+  if (error) throw error;
+  return lista;
 }
 
 export async function archiveFicha(record, actingUser, archived) {
@@ -120,6 +169,9 @@ export async function duplicateFicha(record, actingUser) {
     ...rest,
     nome: `${record.nome} (cópia)`,
     arquivado: false,
+    // A cópia nasce fora da lixeira e sem herdar os recibos já emitidos da original.
+    excluido_em: null,
+    recibos: [],
     historico: [{ ts: nowStr(), user: actingUser, action: `Duplicada a partir da ficha de "${record.nome}"` }],
   });
   const { data, error } = await sb.from("fichas").insert(payload).select().single();

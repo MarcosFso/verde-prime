@@ -16,6 +16,7 @@ const avatarColors = ["#2A5EAA", "#2F8F5E", "#1F8A8A", "#7A9A2E", "#C98A2C", "#2
 export default function FichaList({
   fichas, query, setQuery, statusFilter, setStatusFilter, overdueOnly, setOverdueOnly,
   showArchived, setShowArchived, archivedCount,
+  showTrash, setShowTrash, fichasExcluidas, loadingTrash, onRestore, onPurge,
   currentUsername, isAdmin, profiles, adminViewUser, setAdminViewUser,
   onNew, onOpen, onDuplicate, onArchive, onUnarchive, onDelete, onGenerateRecibo,
   isOnline, loading,
@@ -39,6 +40,71 @@ export default function FichaList({
     }
     return true;
   }).sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
+
+  // A lixeira é uma tela própria: fichas removidas, com restaurar e excluir de vez.
+  if (showTrash) {
+    const naLixeira = fichasExcluidas || [];
+    return (
+      <div className="vp-fade-in" style={{ fontFamily: "var(--vp-font-body)" }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto", padding: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
+            <div>
+              <h1 style={{ fontSize: 24, color: ink, margin: 0, fontFamily: "var(--vp-font-heading)" }}>Lixeira</h1>
+              <p style={{ color: muted, fontSize: 12.5, margin: "4px 0 0" }}>
+                {naLixeira.length} ficha{naLixeira.length !== 1 ? "s" : ""} na lixeira
+              </p>
+            </div>
+            <button onClick={() => setShowTrash(false)}
+              style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, background: card, color: ink,
+                border: `1.5px solid ${line}`, borderRadius: 20, padding: "8px 14px", cursor: "pointer" }}>
+              <RotateCcw size={14} /> Voltar para as fichas
+            </button>
+          </div>
+
+          <p style={{ color: muted, fontSize: 12.5, marginBottom: 16 }}>
+            Fichas na lixeira não aparecem na lista nem entram nos totais do financeiro. Restaure para trazê-las de volta, ou exclua para sempre.
+          </p>
+
+          {loadingTrash ? (
+            <div>{[0, 1, 2].map((i) => <SkeletonFichaRow key={i} />)}</div>
+          ) : naLixeira.length === 0 ? (
+            <div style={{ border: `2px dashed ${line}`, borderRadius: 12, padding: "60px 20px", textAlign: "center", color: muted, fontSize: 14, background: card, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+              <Trash2 size={36} color={line} />
+              A lixeira está vazia.
+            </div>
+          ) : (
+            <div>
+              {naLixeira.map((c) => {
+                const sub = [c.nome_imovel, c.municipio_uf].filter(Boolean).join(" · ") || "Sem imóvel informado";
+                const quando = c.excluido_em ? new Date(c.excluido_em).toLocaleDateString("pt-BR") : "";
+                return (
+                  <div key={c.id} style={{ background: card, border: `1px solid ${line}`, borderLeft: `5px solid ${muted}`, borderRadius: 12,
+                    padding: "13px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10, flexWrap: "wrap", rowGap: 10 }}>
+                    <div style={{ minWidth: 200, flex: 1 }}>
+                      <div style={{ fontWeight: 700, color: ink }}>{c.nome}</div>
+                      <div style={{ color: muted, fontSize: 12.5, marginTop: 4 }}>
+                        {sub}{quando ? ` · removida em ${quando}` : ""}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0, flexWrap: "wrap" }}>
+                      <button onClick={() => onRestore(c)} title="Restaurar esta ficha"
+                        style={{ ...iconBtn(brand), fontSize: 11.5, fontWeight: 700, width: "auto", gap: 5, padding: "8px 12px" }}>
+                        <RotateCcw size={14} /> Restaurar
+                      </button>
+                      <button onClick={() => onPurge(c)} title="Excluir para sempre"
+                        style={{ ...iconBtn(danger), fontSize: 11.5, fontWeight: 700, width: "auto", gap: 5, padding: "8px 12px" }}>
+                        <Trash2 size={14} /> Excluir para sempre
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="vp-fade-in" style={{ fontFamily: "var(--vp-font-body)" }}>
@@ -113,6 +179,11 @@ export default function FichaList({
             style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600,
               background: showArchived ? ink : card, color: showArchived ? "#fff" : ink, border: `1.5px solid ${showArchived ? ink : line}`, borderRadius: 20, padding: "7px 12px", cursor: "pointer" }}>
             <Archive size={13} /> {showArchived ? "Voltar para ativas" : `Ver arquivados${archivedCount ? ` (${archivedCount})` : ""}`}
+          </button>
+          <button onClick={() => setShowTrash(true)} title="Fichas removidas, com opção de restaurar"
+            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, background: card, color: ink,
+              border: `1.5px solid ${line}`, borderRadius: 20, padding: "7px 12px", cursor: "pointer" }}>
+            <Trash2 size={13} /> Lixeira
           </button>
         </div>
 

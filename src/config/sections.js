@@ -302,7 +302,7 @@ export const THEME = {
 };
 
 export function emptyRecord() {
-  const r = { id: null, fotos: [], documentos: [], arquivado: false, historico: [], pagamentos: [], valor_recebido: 0 };
+  const r = { id: null, fotos: [], documentos: [], arquivado: false, historico: [], pagamentos: [], recibos: [], valor_recebido: 0 };
   SECTIONS.forEach((s) => s.fields.forEach((f) => {
     if (f.type === "checkboxGroup") r[f.id] = [];
     else if (f.type === "currency") r[f.id] = 0;
