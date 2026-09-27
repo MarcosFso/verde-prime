@@ -66,6 +66,13 @@ Outras decisões de segurança e privacidade do projeto:
 - **Rascunhos apagados no logout.** O formulário salva sozinho no navegador enquanto é preenchido, mas esse rascunho é descartado ao sair — ele contém dados pessoais de clientes e o sistema roda em computador compartilhado.
 - **Logout automático por inatividade**, pelo mesmo motivo.
 - **Anexos privados.** Fotos e documentos ficam num bucket fechado, acessados por links assinados temporários, nunca por URL pública.
+- **Cache do modo offline restrito ao app.** O Service Worker guarda apenas os arquivos do build; nenhuma resposta da API — onde estão os dados dos clientes — é armazenada no navegador.
+
+### Sobre a dependência de geração de PDF
+
+`npm audit` aponta uma advertência de XSS em `html2pdf.js` (GHSA-w8x4-x68c-m6fc), corrigida na versão 0.14. A atualização não foi aplicada porque a 0.14 passou a sanitizar o HTML com DOMPurify, que **remove blocos `<style>`** — e o recibo depende inteiramente deles para reproduzir o modelo da empresa. Verifiquei isso na prática: com a 0.14, as margens vão a zero, o título perde a centralização e a fonte volta ao padrão do navegador.
+
+A vulnerabilidade é justamente a inserção de HTML não sanitizado no DOM, e está **neutralizada na origem**: todo valor vindo do usuário passa por `escapeHtml` antes de entrar no documento, com teste automatizado cobrindo os payloads. As demais advertências do `jspdf` foram eliminadas fixando a versão 4.2.1 via `overrides` — mantendo o `html2pdf` na 0.10, que não sanitiza. A geração de PDF foi testada nessa combinação.
 
 ## 📁 Estrutura do projeto
 

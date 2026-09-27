@@ -81,8 +81,16 @@ export default function App() {
     (async () => {
       const s = await api.getSession();
       if (s) {
-        const p = await api.getMyProfile(s.user.id);
-        if (p && p.is_active === false) {
+        let p = null;
+        try {
+          p = await api.getMyProfile(s.user.id);
+        } catch (e) {
+          p = null;
+        }
+        // Mesma regra do login: conta desativada, ou perfil que não pôde ser
+        // lido, não restauram sessão. Antes, perfil nulo passava e o app abria
+        // sem saber quem era o usuário.
+        if (!p || p.is_active === false) {
           await api.signOut();
           setSession(null);
           setProfile(null);
@@ -98,9 +106,17 @@ export default function App() {
       if (event === "PASSWORD_RECOVERY") {
         setRecoveryMode(true);
         setSession(s);
+        return;
       }
-      if (event === "SIGNED_IN" && !recoveryMode) {
-        setSession(s);
+      // Importante: aqui NÃO se trata o SIGNED_IN. Cada caminho de entrada
+      // (login, cadastro e verificação de código) define a sessão por conta
+      // própria, depois de checar se a conta está ativa. Se este ouvinte também
+      // definisse, uma conta desativada entraria pela porta de trás: o Supabase
+      // autentica, o evento monta a sessão, e a checagem que vem depois já não
+      // teria como desfazer.
+      if (event === "SIGNED_OUT") {
+        setSession(null);
+        setProfile(null);
       }
     });
     return () => sub.subscription.unsubscribe();
@@ -166,16 +182,28 @@ export default function App() {
     setSession(s);
     if (s) setProfile(await api.getMyProfile(s.user.id));
   };
+  const negarEntrada = async (mensagem) => {
+    await api.signOut();
+    setSession(null);
+    setProfile(null);
+    throw new Error(mensagem);
+  };
+
   const handleSignIn = async (email, password) => {
     await api.signIn(email, password);
     const s = await api.getSession();
     const p = s ? await api.getMyProfile(s.user.id) : null;
-    if (p && p.is_active === false) {
-      await api.signOut();
-      throw new Error("Essa conta foi desativada. Fale com o administrador.");
+
+    // Falha fechada: sem perfil legível não há como saber se a conta está ativa,
+    // então nega em vez de liberar por omissão.
+    if (!p) {
+      await negarEntrada("Não foi possível carregar seu perfil. Tente novamente em instantes.");
+    }
+    if (p.is_active === false) {
+      await negarEntrada("Essa conta foi desativada. Fale com o administrador.");
     }
     setSession(s);
-    if (p) setProfile(p);
+    setProfile(p);
   };
   const handleForgotPassword = async (email) => {
     await api.requestPasswordReset(email);
