@@ -3,7 +3,7 @@
 [![CI](https://github.com/MarcosFso/verde-prime/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcosFso/verde-prime/actions/workflows/ci.yml)
 [![Licença: MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-green.svg)](LICENSE)
 
-Sistema web full-stack para gestão de fichas técnicas de consultoria ambiental (Cadastro Ambiental Rural — CAR), desenvolvido para uso real por uma empresa de consultoria ambiental. Multi-usuário, com controle financeiro, geração de documentos em PDF e modo offline.
+Sistema web full-stack para gestão de fichas técnicas de consultoria ambiental (Cadastro Ambiental Rural — CAR), desenvolvido para uso real por uma empresa de consultoria ambiental. Multi-usuário, com controle financeiro, geração de documentos em PDF e instalação como aplicativo (PWA).
 
 **🔗 Demo ao vivo:** [verde-prime.vercel.app](https://verde-prime.vercel.app)
 
@@ -35,6 +35,7 @@ Nenhum dado real aparece ali: os CPFs foram gerados para passar na validação, 
 - **PWA:** instalável, com suporte offline via Service Worker (`vite-plugin-pwa`)
 - **Geração de PDF:** `html2pdf.js`, carregado sob demanda (code splitting) para não pesar o carregamento inicial
 - **Ícones:** `lucide-react`
+- **Qualidade:** testes com Vitest, lint com oxlint e integração contínua no GitHub Actions
 
 ## ✨ Funcionalidades
 
@@ -53,10 +54,10 @@ Nenhum dado real aparece ali: os CPFs foram gerados para passar na validação, 
 - **Visual com elementos 3D** e animações de entrada (desativadas para quem pede "reduzir movimento" no sistema)
 - **Responsivo** — funciona no celular, com áreas de toque confortáveis e sem rolagem lateral
 - **Modo escuro / claro**
-- **Modo offline (PWA)** — o app abre mesmo sem conexão; dados sincronizam quando a internet volta
+- **Instalável e com abertura offline (PWA)** — o app abre mesmo sem conexão e pode ser instalado no celular ou no computador. Os dados dos clientes **sempre vêm do servidor** e exigem internet: por segurança, nenhuma resposta da API fica guardada no navegador
 - **Rascunho automático** — o formulário salva sozinho enquanto você digita
 - **Logout automático por inatividade** (30 minutos)
-- **Busca, filtros e ordenação** na lista de fichas
+- **Busca e filtros** na lista de fichas: por nome, imóvel, município, CPF/CNPJ, CAR ou protocolo, por situação e por prazos vencidos
 
 ## 🔒 Segurança
 
@@ -66,7 +67,7 @@ O banco de dados usa **Row Level Security (RLS)** do PostgreSQL/Supabase: as reg
 
 Outras decisões de segurança e privacidade do projeto:
 
-- **Nenhuma credencial no repositório.** As chaves ficam em variáveis de ambiente, configuradas no painel da hospedagem. O `.env.example` traz só os nomes dos campos.
+- **Nenhuma credencial real no repositório.** As chaves ficam em variáveis de ambiente, configuradas no painel da hospedagem, e o `.env.example` traz só os nomes dos campos. A única credencial publicada é a da conta de demonstração, de propósito, e ela só enxerga os próprios dados fictícios.
 - **Escape de HTML na geração de PDF.** Os PDFs são montados como HTML e renderizados no DOM, então todo valor digitado pelo usuário passa por uma função de escape antes de entrar no documento — caso contrário, uma tag inserida num campo da ficha poderia executar script na sessão de quem gera o PDF, inclusive a do administrador.
 - **Rascunhos apagados no logout.** O formulário salva sozinho no navegador enquanto é preenchido, mas esse rascunho é descartado ao sair — ele contém dados pessoais de clientes e o sistema roda em computador compartilhado.
 - **Logout automático por inatividade**, pelo mesmo motivo.
@@ -87,10 +88,15 @@ src/
   supabaseClient.js       -> conexão com o Supabase (lê as chaves do .env)
   config/sections.js      -> configuração dos campos/seções da ficha + tema de cores
   utils/                  -> máscaras, validações, compressão de imagem, cálculos financeiros, geração de PDF
-  components/Tilt.jsx     -> card que inclina em 3D seguindo o mouse
-  components/Scene3D.jsx  -> cena 3D do login (cubo de vidro, anéis e esferas)
   components/             -> telas e componentes (autenticação, lista, formulário, financeiro, admin)
+    Tilt.jsx              -> card que inclina em 3D seguindo o mouse
+    Scene3D.jsx           -> cena 3D do login (cubo de vidro, anéis e esferas)
+  index.css               -> tema (cores, modo escuro), animações e efeitos 3D
   App.jsx                 -> roteamento de telas e estado global
+.github/workflows/
+  ci.yml                  -> lint, testes e build a cada push
+  keep-alive.yml          -> consulta periódica que evita a pausa do Supabase
+docs/screenshots/         -> imagens usadas neste README
 ```
 
 ## 🚀 Rodando localmente
@@ -137,6 +143,8 @@ Para funcionar, cadastre dois segredos em *Settings → Secrets and variables �
 | --- | --- |
 | `SUPABASE_URL` | URL do projeto, sem `/rest/v1/` no final |
 | `SUPABASE_ANON_KEY` | chave pública (`anon`) do projeto |
+
+O GitHub desativa agendamentos de repositórios sem nenhum commit por 60 dias; se isso acontecer, ele avisa por e-mail e basta reativar o workflow na aba *Actions*.
 
 Se o projeto for pausado mesmo assim, o workflow falha e o GitHub avisa por e-mail. Para retomar: painel do Supabase → *Resume project*. O plano gratuito **não faz backup**; exporte o banco de tempos em tempos.
 
