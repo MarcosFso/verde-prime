@@ -34,7 +34,7 @@ export default function AppShell({ view, onNavigate, isAdmin, currentUsername, o
   return (
     <div className="vp-shell">
       <aside className={`vp-sidebar ${collapsed ? "vp-sidebar-collapsed" : ""}`}>
-        <div className="vp-blob" style={{ width: 160, height: 160, background: "#C98A2C", opacity: 0.25, top: -60, left: -40 }} />
+        <div className="vp-blob" style={{ width: 160, height: 160, background: "#A3E635", opacity: 0.22, top: -60, left: -40 }} />
         <div className="vp-sidebar-head">
           <img src={logo} alt="Verde Prime" className="vp-sidebar-logo" />
           <button onClick={toggleSidebar} className="vp-sidebar-toggle"

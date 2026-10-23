@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Download, Copy, UploadCloud, FileDown, Loader2 } from "lucide-react";
+import { X, Download, Copy, UploadCloud, FileDown, Loader2, Save } from "lucide-react";
 import { SECTIONS, THEME } from "../config/sections";
 import FieldInput, { FieldLabel } from "./FieldInput";
 import Icon from "./Icon";
@@ -10,14 +10,14 @@ import { generateFichaPDF } from "../utils/fichaPdf";
 import { formatBRL } from "../utils/finance";
 import logo from "../assets/logo.png";
 
-const { ink, muted, line, bg, pageBg, card, cardGlass, brand, brandDark, amber, danger } = THEME;
+const { ink, muted, line, bg, pageBg, card, cardGlass, brand, danger } = THEME;
 
 // Limite por documento. O bucket do Supabase aceita bem mais, mas vale conter:
 // o plano gratuito tem 1 GB de armazenamento no total.
 const MAX_DOC_MB = 25;
 
 export default function FichaForm({ editing, setEditing, userId, onCancel, onSave, onDuplicate, showToast }) {
-  const [openSections, setOpenSections] = useState({ cabecalho: true, proprietario: true });
+  const [openSections, setOpenSections] = useState(() => Object.fromEntries(SECTIONS.map((sec) => [sec.id, true])));
   const [uploading, setUploading] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [dragPhoto, setDragPhoto] = useState(false);
@@ -161,40 +161,87 @@ export default function FichaForm({ editing, setEditing, userId, onCancel, onSav
     if (item?.path) removeAttachment(item.path).catch(() => {});
   };
 
+  const filled = (v) => (Array.isArray(v) ? v.length > 0 : typeof v === "number" ? v > 0 : !!String(v ?? "").trim());
+  const sectionProgress = (sec) => {
+    const total = sec.fields.length;
+    const done = sec.fields.filter((f) => filled(editing[f.id])).length;
+    return { done, total, pct: total ? Math.round((done / total) * 100) : 0 };
+  };
+  const formSections = SECTIONS.filter((sec) => sec.id !== "cadista");
+  const overall = (() => {
+    const all = formSections.flatMap((sec) => sec.fields);
+    return all.length ? Math.round((all.filter((f) => filled(editing[f.id])).length / all.length) * 100) : 0;
+  })();
+  const allOpen = formSections.every((sec) => openSections[sec.id]);
+  const setAllSections = (open) => setOpenSections(Object.fromEntries(SECTIONS.map((sec) => [sec.id, open])));
+  const goToSection = (id) => {
+    setOpenSections((prev) => ({ ...prev, [id]: true }));
+    setTimeout(() => document.getElementById("sec-" + id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 30);
+  };
+
   const valorAReceber = Math.max((Number(editing.valor_cobrado) || 0) - (Number(editing.valor_recebido) || 0), 0);
 
   return (
     <div className="vp-fade-in" style={{ background: pageBg, minHeight: "100vh", fontFamily: "var(--vp-font-body)" }}>
-      <div style={{ position: "sticky", top: 0, zIndex: 10, background: `linear-gradient(120deg, ${brandDark}, ${brand} 60%, ${brandDark})`, color: "#fff", overflow: "hidden" }}>
-        <div className="vp-blob" style={{ width: 180, height: 180, background: "#C98A2C", opacity: 0.2, top: -90, right: "15%" }} />
-        <div style={{ maxWidth: 720, margin: "0 auto", padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, position: "relative" }}>
-          <button onClick={handleCancelClick} style={{ background: "rgba(255,255,255,0.15)", color: "#fff", border: "none", borderRadius: 6, padding: "7px 12px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-            <X size={14} /> Cancelar
+      <div className="vp-form-header" style={{ position: "sticky", top: 0, zIndex: 10, background: "var(--vp-hero)", boxShadow: "0 10px 30px rgba(5,61,43,0.35)", color: "#fff", overflow: "hidden" }}>
+        <div className="vp-blob" style={{ width: 180, height: 180, background: "#A3E635", opacity: 0.3, top: -90, right: "15%" }} />
+        <div className="vp-form-head">
+          <button onClick={handleCancelClick} className="vp-form-cancel">
+            <X size={15} /> Cancelar
           </button>
-          <img src={logo} alt="Verde Prime" style={{ height: 32 }} />
-          <h1 style={{ fontSize: 17, margin: 0, fontFamily: "var(--vp-font-heading)" }}>{editing.id ? "Editar ficha" : "Nova ficha"}</h1>
+          <img src={logo} alt="Verde Prime" style={{ height: 34 }} />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div className="vp-form-kicker">{editing.id ? "Editar ficha" : "Nova ficha"}</div>
+            <h1 className="vp-form-title">{editing.nome || "Novo cliente"}</h1>
+          </div>
+          <div className="vp-form-progress" title="Campos preenchidos">
+            <div className="vp-form-progress-top"><span>Preenchimento</span><strong>{overall}%</strong></div>
+            <div className="vp-form-progress-bar"><div style={{ width: `${overall}%` }} /></div>
+          </div>
         </div>
       </div>
-      <div style={{ maxWidth: 720, margin: "0 auto", padding: "20px 20px 100px" }}>
+      <div className="vp-form-layout">
+        <nav className="vp-form-nav">
+          <div className="vp-form-nav-title">Seções</div>
+          {formSections.map((sec) => {
+            const pr = sectionProgress(sec);
+            return (
+              <button key={sec.id} type="button" onClick={() => goToSection(sec.id)} className="vp-form-nav-item">
+                <span className="vp-icon-3d vp-form-nav-ico" style={{ background: sec.accent }}><Icon name={sec.icon} size={13} color="#fff" /></span>
+                <span className="vp-form-nav-text">
+                  <span>{sec.title}</span>
+                  <span className="vp-form-nav-bar"><span style={{ width: `${pr.pct}%`, background: sec.accent }} /></span>
+                </span>
+                <span className="vp-form-nav-count" style={pr.pct === 100 ? { color: "var(--vp-brand)" } : undefined}>{pr.pct === 100 ? "✓" : `${pr.done}/${pr.total}`}</span>
+              </button>
+            );
+          })}
+          <button type="button" onClick={() => setAllSections(!allOpen)} className="vp-form-nav-toggle">
+            {allOpen ? "Recolher tudo" : "Expandir tudo"}
+          </button>
+        </nav>
+        <div className="vp-form-grid vp-stagger">
         {SECTIONS.filter((s) => s.id !== "cadista").map((s) => {
           const isOpen = !!openSections[s.id];
           return (
-            <div key={s.id} style={{ background: card, border: `1px solid ${line}`, borderRadius: 12, marginBottom: 14, overflow: "hidden" }}>
+            <div key={s.id} id={"sec-" + s.id} className={`vp-panel ${s.id === "financeiro" ? "vp-form-wide" : ""}`} style={{ background: card, border: `1px solid ${line}`, borderRadius: 20, overflow: "hidden", scrollMarginTop: 110 }}>
               <div onClick={() => toggleSection(s.id)}
                 style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", cursor: "pointer", borderLeft: `5px solid ${s.accent}` }}>
-                <div style={{ width: 30, height: 30, borderRadius: 8, background: s.accent, color: "#fff", display: "flex",
+                <div className="vp-icon-3d" style={{ width: 34, height: 34, borderRadius: 10, background: s.accent, color: "#fff", display: "flex",
                   alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name={s.icon} size={15} color="#fff" /></div>
                 <div style={{ fontWeight: 700, fontSize: 14.5, flex: 1, color: ink }}>{s.title}</div>
                 <div style={{ color: muted, fontSize: 13, transform: isOpen ? "none" : "rotate(-90deg)", transition: "transform .2s" }}>▾</div>
               </div>
               {isOpen && (
-                <div style={{ padding: "4px 18px 18px", display: "grid", gap: 14 }}>
+                <div style={{ padding: "4px 20px 20px", display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
                   {(s.id === "financeiro" ? s.fields.filter((f) => f.id !== "observacoes_financeiro") : s.fields).map((f) => (
-                    <FieldInput key={f.id} field={f} value={editing[f.id]} accent={s.accent}
-                      onChange={(val) => setField(f.id, val)} onToggleChip={(v) => toggleChip(f.id, v)} />
+                    <div key={f.id} style={f.type === "textarea" || f.type === "checkboxGroup" ? { gridColumn: "1 / -1" } : undefined}>
+                      <FieldInput field={f} value={editing[f.id]} accent={s.accent}
+                        onChange={(val) => setField(f.id, val)} onToggleChip={(v) => toggleChip(f.id, v)} />
+                    </div>
                   ))}
                   {s.id === "financeiro" && (
-                    <>
+                    <div style={{ gridColumn: "1 / -1", display: "grid", gap: 16 }}>
                       <PagamentosField pagamentos={editing.pagamentos} onChange={(list) => {
                         const total = list.reduce((sum, p) => sum + (Number(p.valor) || 0), 0);
                         setEditing((prev) => ({ ...prev, pagamentos: list, valor_recebido: total }));
@@ -232,7 +279,7 @@ export default function FichaForm({ editing, setEditing, userId, onCancel, onSav
                           </div>
                         </div>
                       )}
-                    </>
+                    </div>
                   )}
                 </div>
               )}
@@ -241,9 +288,9 @@ export default function FichaForm({ editing, setEditing, userId, onCancel, onSav
         })}
 
         {/* Fotos */}
-        <div style={{ background: card, border: `1px solid ${line}`, borderRadius: 12, marginBottom: 14, overflow: "hidden" }}>
+        <div className="vp-panel vp-form-wide" style={{ background: card, border: `1px solid ${line}`, borderRadius: 20, overflow: "hidden" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderLeft: "5px solid #2E86C1" }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: "#2E86C1", color: "#fff", display: "flex",
+            <div className="vp-icon-3d" style={{ width: 34, height: 34, borderRadius: 10, background: "#2E86C1", color: "#fff", display: "flex",
               alignItems: "center", justifyContent: "center" }}><Icon name="camera" size={15} color="#fff" /></div>
             <div style={{ fontWeight: 700, fontSize: 14.5, color: ink }}>Fotos</div>
           </div>
@@ -268,9 +315,9 @@ export default function FichaForm({ editing, setEditing, userId, onCancel, onSav
         </div>
 
         {/* Documentos */}
-        <div style={{ background: card, border: `1px solid ${line}`, borderRadius: 12, marginBottom: 14, overflow: "hidden" }}>
+        <div className="vp-panel vp-form-wide" style={{ background: card, border: `1px solid ${line}`, borderRadius: 20, overflow: "hidden" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderLeft: "5px solid #7A4FA3" }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: "#7A4FA3", color: "#fff", display: "flex",
+            <div className="vp-icon-3d" style={{ width: 34, height: 34, borderRadius: 10, background: "#7A4FA3", color: "#fff", display: "flex",
               alignItems: "center", justifyContent: "center" }}><Icon name="paperclip" size={15} color="#fff" /></div>
             <div style={{ fontWeight: 700, fontSize: 14.5, color: ink }}>Documentos</div>
           </div>
@@ -321,9 +368,9 @@ export default function FichaForm({ editing, setEditing, userId, onCancel, onSav
 
         {/* Histórico */}
         {editing.id && (editing.historico || []).length > 0 && (
-          <div style={{ background: card, border: `1px solid ${line}`, borderRadius: 12, marginBottom: 14, overflow: "hidden" }}>
+          <div className="vp-panel vp-form-wide" style={{ background: card, border: `1px solid ${line}`, borderRadius: 20, overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderLeft: "5px solid #6B6470" }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: "#6B6470", color: "#fff", display: "flex",
+              <div className="vp-icon-3d" style={{ width: 34, height: 34, borderRadius: 10, background: "#6B6470", color: "#fff", display: "flex",
                 alignItems: "center", justifyContent: "center" }}><Icon name="history" size={15} color="#fff" /></div>
               <div style={{ fontWeight: 700, fontSize: 14.5, color: ink }}>Histórico de alterações</div>
             </div>
@@ -336,16 +383,15 @@ export default function FichaForm({ editing, setEditing, userId, onCancel, onSav
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Barra de salvar fixa */}
-      <div className="vp-glass" style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 20,
+      <div className="vp-glass" style={{ position: "sticky", bottom: 0, zIndex: 20,
         background: cardGlass, borderTop: `1px solid ${line}`, boxShadow: "0 -6px 20px rgba(0,0,0,0.08)" }}>
-        <div style={{ maxWidth: 720, margin: "0 auto", padding: "12px 20px", display: "flex", gap: 10 }}>
-          <button onClick={onSave} disabled={uploading}
-            style={{ flex: 1, background: `linear-gradient(90deg, ${amber}, #B9762A)`, color: "#fff", padding: 13,
-              fontWeight: 700, fontSize: 15, borderRadius: 10, border: "none", cursor: "pointer", opacity: uploading ? 0.7 : 1, boxShadow: "0 4px 14px rgba(201,138,44,0.3)" }}>
-            {editing.id ? "Salvar alterações" : "Salvar ficha"}
+        <div className="vp-action-bar">
+          <button onClick={onSave} disabled={uploading} className="vp-act vp-act-primary">
+            <Save size={17} /> {editing.id ? "Salvar alterações" : "Salvar ficha"}
           </button>
           <button onClick={async () => {
               setGeneratingPdf(true);
@@ -359,26 +405,26 @@ export default function FichaForm({ editing, setEditing, userId, onCancel, onSav
               }
             }}
             disabled={generatingPdf} title="Baixar ficha em PDF"
-            style={{ background: card, color: ink, padding: "0 16px", fontWeight: 700, fontSize: 13, borderRadius: 10, border: `1.5px solid ${line}`, cursor: generatingPdf ? "default" : "pointer", display: "flex", alignItems: "center", gap: 6, opacity: generatingPdf ? 0.7 : 1 }}>
-            {generatingPdf ? <><Loader2 size={14} className="vp-spin-icon" /> Gerando...</> : <><FileDown size={14} /> Baixar PDF</>}
+            className="vp-act vp-act-soft">
+            {generatingPdf ? <><Loader2 size={16} className="vp-spin-icon" /> Gerando...</> : <><FileDown size={16} /> Baixar PDF</>}
           </button>
           {editing.id && (
-            <button onClick={onDuplicate} style={{ background: card, color: ink, padding: "0 16px", fontWeight: 700, fontSize: 13, borderRadius: 10, border: `1.5px solid ${line}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-              <Copy size={14} /> Duplicar
+            <button onClick={onDuplicate} className="vp-act vp-act-soft">
+              <Copy size={16} /> Duplicar
             </button>
           )}
         </div>
       </div>
 
       {showLeaveConfirm && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 30 }}>
-          <div className="vp-modal-in" style={{ background: card, borderRadius: 12, padding: 22, maxWidth: 380, width: "100%" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(2,20,12,0.62)", backdropFilter: "blur(7px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 30 }}>
+          <div className="vp-modal-in vp-modal" style={{ background: card, borderRadius: 22, padding: 22, maxWidth: 380, width: "100%" }}>
             <h3 style={{ fontSize: 16, marginBottom: 6, fontWeight: 700, color: ink }}>Sair sem salvar?</h3>
             <p style={{ color: muted, fontSize: 13, marginBottom: 18 }}>
               Você fez alterações nessa ficha que ainda não foram salvas. Se sair agora, elas podem se perder (fica só o rascunho automático).
             </p>
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setShowLeaveConfirm(false)}
+              <button onClick={() => setShowLeaveConfirm(false)} className="vp-btn-3d"
                 style={{ flex: 1, background: brand, color: "#fff", padding: 9, fontWeight: 600, borderRadius: 8, border: "none", cursor: "pointer" }}>
                 Continuar editando
               </button>
@@ -406,10 +452,10 @@ function PhotoThumb({ item, onRemove, onDownload }) {
         </div>
       )}
       {item.url && (
-        <button onClick={onDownload} title="Baixar foto"
+        <button onClick={onDownload} title="Baixar foto" className="vp-mini"
           style={{ position: "absolute", bottom: -6, left: -6, width: 22, height: 22, borderRadius: "50%", background: "#2E86C1", color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Download size={11} /></button>
       )}
-      <button onClick={onRemove} title="Remover"
+      <button onClick={onRemove} title="Remover" className="vp-mini"
         style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: danger, color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={11} /></button>
     </div>
   );

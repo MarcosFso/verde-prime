@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ShieldCheck, Leaf, FileCheck2, Sun, Moon } from "lucide-react";
 import { getTheme, toggleTheme } from "../utils/theme";
 import logo from "../assets/logo.png";
+import Scene3D from "./Scene3D";
 
 export default function AuthShell({ children, tagline }) {
   const [dark, setDark] = useState(() => getTheme() === "dark");
@@ -15,8 +16,8 @@ export default function AuthShell({ children, tagline }) {
         {dark ? <Sun size={16} /> : <Moon size={16} />}
       </button>
       <div className="vp-auth-brand">
-        <div className="vp-blob" style={{ width: 260, height: 260, background: "#C98A2C", opacity: 0.3, top: "-8%", left: "-8%" }} />
-        <div className="vp-blob" style={{ width: 220, height: 220, background: "#1F8A8A", opacity: 0.3, bottom: "-8%", right: "-6%", animationDelay: "2s" }} />
+        <div className="vp-blob" style={{ width: 260, height: 260, background: "#A3E635", opacity: 0.28, top: "-8%", left: "-8%" }} />
+        <div className="vp-blob" style={{ width: 220, height: 220, background: "#06B6D4", opacity: 0.32, bottom: "-8%", right: "-6%", animationDelay: "2s" }} />
         <div className="vp-blob" style={{ width: 140, height: 140, background: "#7A9A2E", opacity: 0.22, top: "20%", right: "10%", animationDelay: "1s" }} />
         <svg className="vp-auth-pattern" viewBox="0 0 400 500" preserveAspectRatio="none" aria-hidden="true">
           <path d="M0,90 C110,150 300,30 400,100" stroke="#fff" strokeWidth="1.2" fill="none" opacity="0.16" />
@@ -24,11 +25,9 @@ export default function AuthShell({ children, tagline }) {
           <path d="M0,300 C150,360 260,240 400,320" stroke="#fff" strokeWidth="1.2" fill="none" opacity="0.1" />
           <path d="M0,400 C160,450 250,350 400,420" stroke="#fff" strokeWidth="1.2" fill="none" opacity="0.08" />
         </svg>
-        <img src={logo} alt="Verde Prime" className="vp-auth-logo" />
+        <Scene3D />
         <h2 className="vp-auth-title">Verde Prime</h2>
-        <p className="vp-auth-tagline">
-          {tagline || "Consultoria ambiental — gestão completa de fichas técnicas e Cadastro Ambiental Rural (CAR)."}
-        </p>
+        {tagline && <p className="vp-auth-tagline">{tagline}</p>}
         <div className="vp-auth-badges">
           <span className="vp-auth-badge"><Leaf size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} />CAR & regularização</span>
           <span className="vp-auth-badge"><FileCheck2 size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} />Fichas técnicas</span>

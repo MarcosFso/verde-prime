@@ -46,16 +46,16 @@ export default function PagamentosField({ pagamentos, onChange }) {
             <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: ink, fontSize: 12.5, pointerEvents: "none" }}>R$</span>
             <input type="text" inputMode="numeric" value={valor ? formatCurrencyDigits(valor) : ""} placeholder="0,00"
               onChange={(e) => setValor(parseCurrencyInput(e.target.value))}
-              style={{ width: "100%", padding: "8px 10px 8px 30px", border: `1.5px solid ${line}`, borderRadius: 8, fontSize: 13, background: card, color: ink }} />
+              style={{ width: "100%", padding: "8px 10px 8px 30px", border: `1.5px solid ${line}`, borderRadius: 12, fontSize: 13, background: card, color: ink }} />
           </div>
         </div>
         <div style={{ flex: "1 1 140px" }}>
           <label style={{ fontSize: 10.5, color: muted, display: "block", marginBottom: 4 }}>Data</label>
           <input type="date" value={data} onChange={(e) => setData(e.target.value)}
-            style={{ width: "100%", padding: "8px 10px", border: `1.5px solid ${line}`, borderRadius: 8, fontSize: 13, background: card, color: ink }} />
+            style={{ width: "100%", padding: "8px 10px", border: `1.5px solid ${line}`, borderRadius: 12, fontSize: 13, background: card, color: ink }} />
         </div>
         <button onClick={add} type="button"
-          style={{ background: brand, color: "#fff", border: "none", borderRadius: 8, padding: "9px 14px", fontWeight: 600, fontSize: 12.5, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+          style={{ background: brand, color: "#fff", border: "none", borderRadius: 12, padding: "9px 14px", fontWeight: 600, fontSize: 12.5, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
           <Plus size={14} /> Adicionar
         </button>
       </div>

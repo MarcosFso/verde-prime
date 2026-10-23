@@ -44,7 +44,7 @@ export default function UsersAdmin({ profiles, currentUserId, onRefresh }) {
     <div className="vp-fade-in" style={{ fontFamily: "var(--vp-font-body)", position: "relative" }}>
       <img src={logo} alt="" aria-hidden="true" style={{
         position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
-        width: 420, opacity: 0.04, zIndex: 0, pointerEvents: "none", userSelect: "none",
+        width: "min(420px, 90vw)", opacity: 0.04, zIndex: 0, pointerEvents: "none", userSelect: "none",
       }} />
       <div style={{ maxWidth: 900, margin: "0 auto", padding: 24, position: "relative", zIndex: 1 }}>
         <div style={{ marginBottom: 20 }}>
@@ -57,14 +57,14 @@ export default function UsersAdmin({ profiles, currentUserId, onRefresh }) {
           Para criar uma conta nova, a pessoa deve usar a aba "Criar conta" na tela de login.
         </p>
 
-        <div style={{ background: card, border: `1px solid ${line}`, borderRadius: 12, overflow: "hidden" }}>
+        <div className="vp-panel vp-stagger" style={{ background: card, border: `1px solid ${line}`, borderRadius: 20, overflow: "hidden" }}>
           {profiles.map((p, i) => (
-            <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+            <div key={p.id} className="vp-row-hover" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
               padding: "14px 18px", borderBottom: i < profiles.length - 1 ? `1px solid ${line}` : "none",
               opacity: p.is_active === false ? 0.55 : 1, flexWrap: "wrap", rowGap: 10 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 160 }}>
-                <div style={{ width: 34, height: 34, borderRadius: "50%", background: amber, color: "#fff", display: "flex",
-                  alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
+                <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #A3E635, #0E9F6E)", color: "#053D2B", display: "flex",
+                  alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, flexShrink: 0, boxShadow: "0 4px 0 rgba(0,0,0,0.18), 0 8px 14px rgba(0,0,0,0.15)" }}>
                   {p.username.charAt(0).toUpperCase()}
                 </div>
                 <div style={{ minWidth: 0 }}>
@@ -78,14 +78,14 @@ export default function UsersAdmin({ profiles, currentUserId, onRefresh }) {
               <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                 <button onClick={() => toggleAdmin(p)} disabled={busyId === p.id || p.id === currentUserId}
                   style={{ fontSize: 11.5, fontWeight: 600, padding: "6px 10px", borderRadius: 8, cursor: p.id === currentUserId ? "not-allowed" : "pointer",
-                    background: p.is_admin ? "#FDF3E4" : card, color: p.is_admin ? "#8F631F" : ink, border: `1.5px solid ${p.is_admin ? amber : line}`,
+                    background: p.is_admin ? "var(--vp-amber-tint)" : card, color: p.is_admin ? "var(--vp-amber)" : ink, border: `1.5px solid ${p.is_admin ? amber : line}`,
                     opacity: p.id === currentUserId ? 0.5 : 1 }}>
                   {p.is_admin ? "Remover admin" : "Tornar admin"}
                 </button>
                 <button onClick={() => toggleActive(p)} disabled={busyId === p.id || p.id === currentUserId}
                   style={{ fontSize: 11.5, fontWeight: 600, padding: "6px 10px", borderRadius: 8, cursor: p.id === currentUserId ? "not-allowed" : "pointer",
-                    background: p.is_active === false ? "#E8F0E8" : card, color: p.is_active === false ? "#2F8F5E" : danger,
-                    border: `1.5px solid ${p.is_active === false ? "#2F8F5E" : danger}`, opacity: p.id === currentUserId ? 0.5 : 1 }}>
+                    background: p.is_active === false ? "var(--vp-brand-tint)" : card, color: p.is_active === false ? "var(--vp-brand)" : danger,
+                    border: `1.5px solid ${p.is_active === false ? "var(--vp-brand)" : danger}`, opacity: p.id === currentUserId ? 0.5 : 1 }}>
                   {p.is_active === false ? "Reativar" : "Desativar"}
                 </button>
               </div>

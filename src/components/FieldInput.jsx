@@ -29,7 +29,7 @@ export default function FieldInput({ field, value, accent, onChange, onToggleChi
         <select
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
-          style={{ width: "100%", padding: 10, border: `1.5px solid ${line}`, borderRadius: 8, outline: "none", background: card, color: ink }}
+          style={{ width: "100%", padding: 10, border: `1.5px solid ${line}`, borderRadius: 12, outline: "none", background: card, color: ink }}
         >
           <option value="">—</option>
           {field.options.map(([v, l]) => (
@@ -48,7 +48,7 @@ export default function FieldInput({ field, value, accent, onChange, onToggleChi
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
           rows={field.rows || 3}
-          style={{ width: "100%", padding: 10, border: `1.5px solid ${line}`, borderRadius: 8, outline: "none", background: card, color: ink, resize: "none" }}
+          style={{ width: "100%", padding: 10, border: `1.5px solid ${line}`, borderRadius: 12, outline: "none", background: card, color: ink, resize: "none" }}
         />
       </div>
     );
@@ -66,7 +66,7 @@ export default function FieldInput({ field, value, accent, onChange, onToggleChi
             value={value ? formatCurrencyDigits(value) : ""}
             placeholder="0,00"
             onChange={(e) => onChange(parseCurrencyInput(e.target.value))}
-            style={{ width: "100%", padding: "10px 10px 10px 32px", border: `1.5px solid ${line}`, borderRadius: 8, outline: "none", background: card, color: ink }}
+            style={{ width: "100%", padding: "10px 10px 10px 32px", border: `1.5px solid ${line}`, borderRadius: 12, outline: "none", background: card, color: ink }}
           />
         </div>
       </div>
@@ -112,7 +112,7 @@ export default function FieldInput({ field, value, accent, onChange, onToggleChi
           else if (field.id === "cpf_cnpj") v = maskCpfCnpj(v);
           onChange(v);
         }}
-        style={{ width: "100%", padding: 10, border: `1.5px solid ${line}`, borderRadius: 8, outline: "none", background: card, color: ink }}
+        style={{ width: "100%", padding: 10, border: `1.5px solid ${line}`, borderRadius: 12, outline: "none", background: card, color: ink }}
       />
     </div>
   );

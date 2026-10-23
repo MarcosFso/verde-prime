@@ -91,13 +91,13 @@ export default function ReciboModal({ ficha, onClose }) {
     }
   };
 
-  const inputStyle = { width: "100%", padding: 10, border: `1.5px solid ${line}`, borderRadius: 8, outline: "none", background: card, color: ink };
+  const inputStyle = { width: "100%", padding: 10, border: `1.5px solid ${line}`, borderRadius: 12, outline: "none", background: card, color: ink };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 30 }}>
-      <div className="vp-modal-in" style={{ background: card, borderRadius: 14, padding: 0, maxWidth: 560, width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(2,20,12,0.62)", backdropFilter: "blur(7px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 30 }}>
+      <div className="vp-modal-in vp-modal" style={{ background: card, borderRadius: 24, padding: 0, maxWidth: 560, width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 24px", borderBottom: `1px solid ${line}` }}>
-          <div style={{ width: 38, height: 38, borderRadius: 11, background: "#1E8F5F", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <div className="vp-icon-3d" style={{ width: 40, height: 40, borderRadius: 12, background: "#0E9F6E", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <Receipt size={19} />
           </div>
           <div style={{ flex: 1 }}>
@@ -206,8 +206,8 @@ export default function ReciboModal({ ficha, onClose }) {
               style={{ flex: 1, background: card, border: `1.5px solid ${line}`, color: ink, padding: 10, fontWeight: 600, borderRadius: 8, cursor: generating ? "default" : "pointer", opacity: generating ? 0.6 : 1 }}>
               Cancelar
             </button>
-            <button onClick={handleGenerate} disabled={generating}
-              style={{ flex: 1, background: brand, color: "#fff", padding: 10, fontWeight: 700, borderRadius: 8, border: "none", cursor: generating ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 12px rgba(31,111,74,0.3)", opacity: generating ? 0.85 : 1 }}>
+            <button onClick={handleGenerate} disabled={generating} className="vp-btn-3d"
+              style={{ flex: 1, background: `linear-gradient(90deg, ${brand}, #0891B2)`, color: "#fff", padding: 11, fontWeight: 700, borderRadius: 12, cursor: generating ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: generating ? 0.85 : 1 }}>
               {generating ? <><Loader2 size={15} className="vp-spin-icon" /> Gerando...</> : <><Download size={15} /> Gerar PDF</>}
             </button>
           </div>

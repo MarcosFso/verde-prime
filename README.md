@@ -22,13 +22,14 @@ Nenhum dado real aparece ali: os CPFs foram gerados para passar na validação, 
 
 | Lista de fichas | Ficha técnica |
 | --- | --- |
-| ![Lista de fichas](docs/screenshots/01-fichas.webp) | ![Ficha técnica](docs/screenshots/02-ficha.png) |
+| ![Lista de fichas](docs/screenshots/01-fichas.png) | ![Ficha técnica](docs/screenshots/02-ficha.png) |
 | **Painel financeiro** | **Recibo gerado em PDF** |
 | ![Painel financeiro](docs/screenshots/03-financeiro.png) | ![Recibo em PDF](docs/screenshots/04-recibo.jpg) |
 
 ## 🛠️ Tecnologias
 
 - **Frontend:** React 18, Vite, CSS puro (sem framework de UI)
+- **Visual 3D:** transformações CSS 3D (cubo de vidro, cards que inclinam, barras e botões com profundidade), sem biblioteca gráfica — nada de Three.js, então o app continua leve
 - **Backend:** Supabase (PostgreSQL, Autenticação, Storage)
 - **Segurança:** Row Level Security (RLS) no banco de dados — cada usuário só acessa seus próprios dados; administradores têm acesso ampliado via políticas específicas
 - **PWA:** instalável, com suporte offline via Service Worker (`vite-plugin-pwa`)
@@ -47,6 +48,10 @@ Nenhum dado real aparece ali: os CPFs foram gerados para passar na validação, 
 - **Histórico de recibos** — cada recibo emitido fica registrado na ficha, com valor, cliente e data
 - **Lixeira** — fichas removidas podem ser restauradas; a exclusão definitiva é uma segunda ação, dentro da lixeira
 - **Arquivamento** de fichas encerradas, separado da lista ativa
+- **Ficha em tela cheia** — índice lateral com o progresso de cada seção, barra de preenchimento geral, seções em colunas e barra de salvar sempre visível
+- **Painel de boas-vindas** com resumo (fichas ativas, prazos vencidos, concluídas e total a receber), andamento por situação e, em cada ficha, barra de pagamento e prazo
+- **Visual com elementos 3D** e animações de entrada (desativadas para quem pede "reduzir movimento" no sistema)
+- **Responsivo** — funciona no celular, com áreas de toque confortáveis e sem rolagem lateral
 - **Modo escuro / claro**
 - **Modo offline (PWA)** — o app abre mesmo sem conexão; dados sincronizam quando a internet volta
 - **Rascunho automático** — o formulário salva sozinho enquanto você digita
@@ -82,6 +87,8 @@ src/
   supabaseClient.js       -> conexão com o Supabase (lê as chaves do .env)
   config/sections.js      -> configuração dos campos/seções da ficha + tema de cores
   utils/                  -> máscaras, validações, compressão de imagem, cálculos financeiros, geração de PDF
+  components/Tilt.jsx     -> card que inclina em 3D seguindo o mouse
+  components/Scene3D.jsx  -> cena 3D do login (cubo de vidro, anéis e esferas)
   components/             -> telas e componentes (autenticação, lista, formulário, financeiro, admin)
   App.jsx                 -> roteamento de telas e estado global
 ```
@@ -107,7 +114,7 @@ src/
 npm test
 ```
 
-São 34 testes cobrindo as regras de negócio que não podem errar: a escrita de valores por extenso no recibo (`mil e quinhentos reais`, incluindo casos como `um milhão de reais`), a validação de CPF e CNPJ pelos dígitos verificadores, as máscaras de telefone e moeda, e a classificação de pagamento de cada ficha em pendente, parcial ou pago.
+São 39 testes cobrindo as regras de negócio que não podem errar: a escrita de valores por extenso no recibo (`mil e quinhentos reais`, incluindo casos como `um milhão de reais`), a validação de CPF e CNPJ pelos dígitos verificadores, as máscaras de telefone e moeda, a classificação de pagamento de cada ficha em pendente, parcial ou pago e o escape de HTML usado na geração dos PDFs.
 
 A cada push, o GitHub Actions roda o lint, os testes e o build — é o que o selo no topo deste arquivo indica.
 
@@ -119,6 +126,19 @@ npm run build
 Gera a pasta `dist/`, pronta para qualquer hospedagem estática (Vercel, Netlify, Cloudflare Pages). Configure as variáveis de ambiente (`VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`) no painel do serviço escolhido.
 
 O projeto está publicado na Vercel, com **deploy automático a cada push** na branch principal: o serviço compila e publica sozinho, sem etapa manual.
+
+## 💤 Manter o Supabase ativo (plano gratuito)
+
+O plano gratuito do Supabase **pausa o projeto após 7 dias sem atividade**. Para evitar isso, o workflow [`keep-alive.yml`](.github/workflows/keep-alive.yml) faz uma consulta leve ao banco **a cada 3 dias**, de graça, pelo GitHub Actions. Ele também pode ser disparado à mão na aba *Actions*.
+
+Para funcionar, cadastre dois segredos em *Settings → Secrets and variables → Actions*:
+
+| Segredo | Valor |
+| --- | --- |
+| `SUPABASE_URL` | URL do projeto, sem `/rest/v1/` no final |
+| `SUPABASE_ANON_KEY` | chave pública (`anon`) do projeto |
+
+Se o projeto for pausado mesmo assim, o workflow falha e o GitHub avisa por e-mail. Para retomar: painel do Supabase → *Resume project*. O plano gratuito **não faz backup**; exporte o banco de tempos em tempos.
 
 ## 📄 Licença
 

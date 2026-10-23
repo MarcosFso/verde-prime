@@ -6,6 +6,7 @@ import { paymentStatus, formatBRL, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_COLORS 
 import { formatCurrencyDigits, parseCurrencyInput } from "../utils/masks";
 import FieldInput from "./FieldInput";
 import CountUp from "./CountUp";
+import Tilt from "./Tilt";
 import ConfirmModal from "./ConfirmModal";
 import { SkeletonRow } from "./Skeleton";
 
@@ -150,9 +151,9 @@ export default function FinanceiroView({ fichas, onBack, onOpenFicha, onSaveCadi
           <h1 style={{ fontSize: 24, margin: 0, fontFamily: "var(--vp-font-heading)", color: ink, display: "flex", alignItems: "center", gap: 10 }}><DollarSign size={22} /> Financeiro</h1>
           <p style={{ color: muted, fontSize: 12.5, margin: "4px 0 0" }}>Saldo, recebimentos, despesas e cadista das fichas ativas.</p>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12, marginBottom: 20 }}>
-          <SummaryCard label="Saldo" value={saldo} format={formatBRL} color="#3B4C99" tint={tealTint} Icon={Scale} />
-          <SummaryCard label="Recebido" value={totalRecebido} format={formatBRL} color="#2F8F5E" tint={brandTint} Icon={TrendingUp} />
+        <div className="vp-stagger" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12, marginBottom: 20 }}>
+          <SummaryCard label="Saldo" value={saldo} format={formatBRL} color="var(--vp-blue)" tint={tealTint} Icon={Scale} />
+          <SummaryCard label="Recebido" value={totalRecebido} format={formatBRL} color="var(--vp-brand)" tint={brandTint} Icon={TrendingUp} />
           <SummaryCard label="A receber" value={aReceber} format={formatBRL} color={amber} tint={amberTint} Icon={Clock} highlight={aReceber > 0} />
           <SummaryCard label="Despesas" value={totalDespesas} format={formatBRL} color={danger} tint={dangerTint} Icon={TrendingDown} />
         </div>
@@ -168,7 +169,7 @@ export default function FinanceiroView({ fichas, onBack, onOpenFicha, onSaveCadi
           ))}
         </div>
 
-        <div style={{ background: card, border: `1px solid ${line}`, borderRadius: 12, padding: 20, marginBottom: 20 }}>
+        <div className="vp-panel" style={{ background: card, border: `1px solid ${line}`, borderRadius: 20, padding: 20, marginBottom: 20 }}>
           <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 700, color: ink }}>Recebido por mês (últimos 6 meses)</h3>
           {!hasRecebimentos ? (
             <div style={{ height: 160, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, color: muted, fontSize: 12.5 }}>
@@ -185,9 +186,9 @@ export default function FinanceiroView({ fichas, onBack, onOpenFicha, onSaveCadi
                   <div key={m.key} title={`${m.label}: ${formatBRL(val)}`}
                     style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%", cursor: "default" }}>
                     <div style={{ fontSize: 10.5, color: isCurrent ? ink : muted, marginBottom: 4, fontWeight: 700 }}>{val > 0 ? formatBRL(val).replace("R$", "").trim() : ""}</div>
-                    <div style={{ width: "100%", maxWidth: 44, height: h, borderRadius: "6px 6px 0 0", transition: "height .3s ease",
-                      background: isCurrent ? "linear-gradient(180deg, #C98A2C, #B9762A)" : "linear-gradient(180deg, #2F8F5E, #1E8F5F)",
-                      boxShadow: isCurrent ? "0 2px 8px rgba(201,138,44,0.4)" : "0 2px 6px rgba(30,143,95,0.3)" }} />
+                    <div className="vp-bar3d" style={{ width: "100%", maxWidth: 44, height: h, transition: "height .3s ease",
+                      "--bar": isCurrent ? "linear-gradient(180deg, #FBBF24, #EA7A0B)" : "linear-gradient(180deg, #34D399, #0E9F6E)",
+                      "--bar-top": isCurrent ? "#FDE68A" : "#A7F3D0", "--bar-side": isCurrent ? "#B45309" : "#047857" }} />
                     <div style={{ fontSize: 11.5, color: isCurrent ? ink : muted, marginTop: 6, textTransform: "capitalize", fontWeight: isCurrent ? 800 : 600 }}>{m.label}</div>
                   </div>
                 );
@@ -196,10 +197,10 @@ export default function FinanceiroView({ fichas, onBack, onOpenFicha, onSaveCadi
           )}
         </div>
 
-        <div style={{ background: card, border: `1px solid ${line}`, borderRadius: 12, overflow: "hidden", marginBottom: 20 }}>
+        <div className="vp-panel" style={{ background: card, border: `1px solid ${line}`, borderRadius: 20, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: `1px solid ${line}` }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: ink, display: "flex", alignItems: "center", gap: 8 }}><Wallet size={15} /> Despesas</h3>
-            <button onClick={() => setMostrarFormDespesa((v) => !v)}
+            <button onClick={() => setMostrarFormDespesa((v) => !v)} className="vp-btn-3d"
               style={{ background: brand, color: "#fff", border: "none", borderRadius: 6, padding: "7px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
               {mostrarFormDespesa ? "Cancelar" : <><Plus size={14} /> Nova despesa</>}
             </button>
@@ -234,7 +235,7 @@ export default function FinanceiroView({ fichas, onBack, onOpenFicha, onSaveCadi
                     style={{ width: "100%", padding: "8px 10px 8px 30px", borderRadius: 6, border: `1px solid ${line}`, fontSize: 13, background: card, color: ink }} />
                 </div>
               </div>
-              <button onClick={handleAddDespesa} disabled={savingDespesa}
+              <button onClick={handleAddDespesa} disabled={savingDespesa} className="vp-btn-3d"
                 style={{ background: "#2F8F5E", color: "#fff", border: "none", borderRadius: 6, padding: "9px 16px", fontSize: 12.5, fontWeight: 600, cursor: savingDespesa ? "default" : "pointer", opacity: savingDespesa ? 0.7 : 1 }}>
                 {savingDespesa ? "Salvando..." : "Salvar"}
               </button>
@@ -270,7 +271,7 @@ export default function FinanceiroView({ fichas, onBack, onOpenFicha, onSaveCadi
           )}
         </div>
 
-        <div style={{ background: card, border: `1px solid ${line}`, borderRadius: 12, overflow: "hidden" }}>
+        <div className="vp-panel" style={{ background: card, border: `1px solid ${line}`, borderRadius: 20, overflow: "hidden" }}>
           <h3 style={{ margin: 0, padding: "16px 20px", fontSize: 14, fontWeight: 700, color: ink, borderBottom: `1px solid ${line}` }}>
             Pendências de pagamento
           </h3>
@@ -301,7 +302,7 @@ export default function FinanceiroView({ fichas, onBack, onOpenFicha, onSaveCadi
           )}
         </div>
 
-        <div style={{ background: card, border: `1px solid ${line}`, borderRadius: 12, overflow: "hidden", marginTop: 20 }}>
+        <div className="vp-panel" style={{ background: card, border: `1px solid ${line}`, borderRadius: 20, overflow: "hidden", marginTop: 20 }}>
           <h3 style={{ margin: 0, padding: "16px 20px", fontSize: 14, fontWeight: 700, color: ink, borderBottom: `1px solid ${line}`, display: "flex", alignItems: "center", gap: 8 }}>
             <Map size={15} /> Cadista
           </h3>
@@ -364,8 +365,8 @@ function CadistaModal({ record, saving, onCancel, onSave }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 30 }}>
-      <div className="vp-modal-in" style={{ background: card, borderRadius: 12, padding: 22, maxWidth: 420, width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(2,20,12,0.62)", backdropFilter: "blur(7px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 30 }}>
+      <div className="vp-modal-in vp-modal" style={{ background: card, borderRadius: 22, padding: 22, maxWidth: 420, width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
         <h3 style={{ fontSize: 16, marginBottom: 2, fontWeight: 700, color: ink }}>Cadista</h3>
         <p style={{ color: muted, fontSize: 12.5, marginBottom: 16 }}>Ficha de <strong>{record.nome}</strong></p>
         <div style={{ display: "grid", gap: 14, marginBottom: 20 }}>
@@ -378,7 +379,7 @@ function CadistaModal({ record, saving, onCancel, onSave }) {
             style={{ flex: 1, background: card, border: `1.5px solid ${line}`, color: ink, padding: 9, fontWeight: 600, borderRadius: 8, cursor: "pointer" }}>
             Cancelar
           </button>
-          <button onClick={handleSubmit} disabled={saving}
+          <button onClick={handleSubmit} disabled={saving} className="vp-btn-3d"
             style={{ flex: 1, background: brand, color: "#fff", padding: 9, fontWeight: 600, borderRadius: 8, border: "none", cursor: "pointer" }}>
             {saving ? "Salvando..." : "Salvar"}
           </button>
@@ -390,13 +391,13 @@ function CadistaModal({ record, saving, onCancel, onSave }) {
 
 function SummaryCard({ label, value, format, color, tint, Icon, highlight }) {
   return (
-    <div className="vp-stat-card" style={{
+    <Tilt max={9} className="vp-stat-card" style={{
       background: `linear-gradient(135deg, ${tint}, ${card} 60%)`,
-      border: `1.5px solid ${highlight ? color : line}`, borderRadius: 14, padding: "16px 18px",
-      boxShadow: "0 2px 10px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", gap: 14,
+      border: `1.5px solid ${highlight ? color : line}`, borderRadius: 18, padding: "18px 20px",
+      boxShadow: "var(--vp-shadow-sm)", display: "flex", alignItems: "center", gap: 14,
     }}>
       {Icon && (
-        <div style={{ width: 40, height: 40, borderRadius: 11, background: color, color: "#fff", display: "flex",
+        <div className="vp-stat-icon" style={{ width: 46, height: 46, borderRadius: 14, background: color, color: "#fff", display: "flex",
           alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <Icon size={19} />
         </div>
@@ -405,6 +406,7 @@ function SummaryCard({ label, value, format, color, tint, Icon, highlight }) {
         <div className="vp-money-value" style={{ color }}><CountUp value={value} format={format} /></div>
         <div style={{ fontSize: 11, color: muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.3, marginTop: 4 }}>{label}</div>
       </div>
-    </div>
+    </Tilt>
   );
 }
+
