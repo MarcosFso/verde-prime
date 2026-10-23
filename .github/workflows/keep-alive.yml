@@ -1,0 +1,30 @@
+name: Manter Supabase ativo
+
+# O plano gratuito do Supabase pausa o projeto após 7 dias sem atividade.
+# Este agendamento faz uma consulta leve ao banco a cada 3 dias para evitar isso.
+
+on:
+  schedule:
+    - cron: "17 9 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Consultar o banco
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fazer uma requisição ao Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            "$SUPABASE_URL/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+          echo "Resposta do Supabase: $status"
+          if [ "$status" -ge 400 ]; then
+            echo "O projeto pode estar pausado ou as chaves estão erradas."
+            exit 1
+          fi
