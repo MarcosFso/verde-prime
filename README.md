@@ -3,6 +3,12 @@
 [![CI](https://github.com/MarcosFso/verde-prime/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcosFso/verde-prime/actions/workflows/ci.yml)
 [![Licença: MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-green.svg)](LICENSE)
 
+### Em 3 linhas
+
+- **O problema:** centraliza, em um só sistema, as fichas técnicas e os processos de Cadastro Ambiental Rural (CAR) de uma consultoria ambiental, com financeiro, anexos e recibos em PDF no modelo da empresa.
+- **O que tem de mais forte:** acesso protegido no próprio banco (RLS, com gatilho e teste de permissões), TypeScript em modo estrito, 39 testes automatizados e verificação a cada push.
+- **Como está:** em uso real, com deploy automático na Vercel, instalável como aplicativo (PWA) e funcionando no celular.
+
 Sistema web full-stack para gestão de fichas técnicas de consultoria ambiental (Cadastro Ambiental Rural — CAR), desenvolvido para uso real por uma empresa de consultoria ambiental. Multi-usuário, com controle financeiro, geração de documentos em PDF e instalação como aplicativo (PWA).
 
 **🔗 Demo ao vivo:** [verde-prime.vercel.app](https://verde-prime.vercel.app)
@@ -71,6 +77,8 @@ Outras decisões de segurança e privacidade do projeto:
 - **Escape de HTML na geração de PDF.** Os PDFs são montados como HTML e renderizados no DOM, então todo valor digitado pelo usuário passa por uma função de escape antes de entrar no documento — caso contrário, uma tag inserida num campo da ficha poderia executar script na sessão de quem gera o PDF, inclusive a do administrador.
 - **Rascunhos apagados no logout.** O formulário salva sozinho no navegador enquanto é preenchido, mas esse rascunho é descartado ao sair — ele contém dados pessoais de clientes e o sistema roda em computador compartilhado.
 - **Logout automático por inatividade**, pelo mesmo motivo.
+- **Perfis protegidos no banco.** Um gatilho em `profiles` impede que um usuário comum altere o próprio acesso (`is_admin`, `is_active`): só um administrador muda isso, e apenas de outras pessoas. A proteção nasceu de uma auditoria das políticas de acesso, que encontrou essa brecha e a fechou; a correção está em [`supabase/migrations`](supabase/migrations) e foi validada com um teste que não grava nada (veja abaixo).
+- **Permissões mínimas.** O visitante sem login não tem acesso às tabelas, e os usuários logados não têm permissões que o app não usa (como `TRUNCATE`).
 - **Anexos privados.** Fotos e documentos ficam num bucket fechado, acessados por links assinados temporários, nunca por URL pública.
 - **Cache do modo offline restrito ao app.** O Service Worker guarda apenas os arquivos do build; nenhuma resposta da API — onde estão os dados dos clientes — é armazenada no navegador.
 
@@ -119,12 +127,18 @@ supabase/                 -> estrutura do banco, regras de acesso (RLS) e teste 
 ## 🧪 Testes
 
 ```bash
-npm test
+npm test            # testes automatizados
+npm run typecheck   # checagem de tipos (TypeScript)
+npm run lint        # análise do código
 ```
 
 São 39 testes cobrindo as regras de negócio que não podem errar: a escrita de valores por extenso no recibo (`mil e quinhentos reais`, incluindo casos como `um milhão de reais`), a validação de CPF e CNPJ pelos dígitos verificadores, as máscaras de telefone e moeda, a classificação de pagamento de cada ficha em pendente, parcial ou pago e o escape de HTML usado na geração dos PDFs.
 
-A cada push, o GitHub Actions roda o lint, os testes e o build — é o que o selo no topo deste arquivo indica.
+A cada push, o GitHub Actions roda a checagem de tipos, o lint, os testes e o build — é o que o selo no topo deste arquivo indica.
+
+### Teste de permissões do banco
+
+As regras de acesso do banco têm um teste próprio, em [`supabase/testes/permissoes.sql`](supabase/testes/permissoes.sql). Ele simula um usuário comum, um administrador e um visitante tentando o que não podem (virar admin, ler fichas de outros, criar ficha em nome de terceiros) e confere se o uso normal continua funcionando. Tudo é desfeito no final, então roda com segurança no banco real. Veja [`supabase/README.md`](supabase/README.md).
 
 ## 📦 Deploy
 
