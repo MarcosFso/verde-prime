@@ -28,14 +28,14 @@ Nenhum dado real aparece ali: os CPFs foram gerados para passar na validação, 
 
 ## 🛠️ Tecnologias
 
-- **Frontend:** React 18, Vite, CSS puro (sem framework de UI)
+- **Frontend:** React 18, **TypeScript** (modo estrito), Vite, CSS puro (sem framework de UI)
 - **Visual 3D:** transformações CSS 3D (cubo de vidro, cards que inclinam, barras e botões com profundidade), sem biblioteca gráfica — nada de Three.js, então o app continua leve
 - **Backend:** Supabase (PostgreSQL, Autenticação, Storage)
 - **Segurança:** Row Level Security (RLS) no banco de dados — cada usuário só acessa seus próprios dados; administradores têm acesso ampliado via políticas específicas
 - **PWA:** instalável, com suporte offline via Service Worker (`vite-plugin-pwa`)
 - **Geração de PDF:** `html2pdf.js`, carregado sob demanda (code splitting) para não pesar o carregamento inicial
 - **Ícones:** `lucide-react`
-- **Qualidade:** testes com Vitest, lint com oxlint e integração contínua no GitHub Actions
+- **Qualidade:** checagem de tipos com `tsc`, testes com Vitest, lint com oxlint e integração contínua no GitHub Actions
 
 ## ✨ Funcionalidades
 
@@ -84,19 +84,21 @@ A vulnerabilidade é justamente a inserção de HTML não sanitizado no DOM, e e
 
 ```
 src/
-  api.js                 -> chamadas ao Supabase (autenticação, fichas, anexos, despesas)
-  supabaseClient.js       -> conexão com o Supabase (lê as chaves do .env)
-  config/sections.js      -> configuração dos campos/seções da ficha + tema de cores
+  api.ts                 -> chamadas ao Supabase (autenticação, fichas, anexos, despesas)
+  supabaseClient.ts       -> conexão tipada com o Supabase (lê as chaves do .env)
+  types/                  -> tipos: linhas do banco (database.ts), ficha (ficha.ts), recibo e interface
+  config/sections.ts      -> configuração dos campos/seções da ficha + tema de cores
   utils/                  -> máscaras, validações, compressão de imagem, cálculos financeiros, geração de PDF
   components/             -> telas e componentes (autenticação, lista, formulário, financeiro, admin)
-    Tilt.jsx              -> card que inclina em 3D seguindo o mouse
-    Scene3D.jsx           -> cena 3D do login (cubo de vidro, anéis e esferas)
+    Tilt.tsx              -> card que inclina em 3D seguindo o mouse
+    Scene3D.tsx           -> cena 3D do login (cubo de vidro, anéis e esferas)
   index.css               -> tema (cores, modo escuro), animações e efeitos 3D
   App.jsx                 -> roteamento de telas e estado global
 .github/workflows/
   ci.yml                  -> lint, testes e build a cada push
   keep-alive.yml          -> consulta periódica que evita a pausa do Supabase
 docs/screenshots/         -> imagens usadas neste README
+supabase/                 -> estrutura do banco, regras de acesso (RLS) e teste de permissões
 ```
 
 ## 🚀 Rodando localmente

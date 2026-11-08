@@ -24,6 +24,9 @@ jobs:
       - name: Instalar as dependências
         run: npm ci
 
+      - name: Verificar os tipos (TypeScript)
+        run: npm run typecheck
+
       - name: Analisar o código
         run: npm run lint
 
