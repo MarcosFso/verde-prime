@@ -54,12 +54,14 @@ jobs:
           set -euo pipefail
           data=$(date -u +%Y-%m-%d)
           {
-            # 1) Tabelas do sistema: estrutura + dados.
-            "$PG_BIN/pg_dump" "$DATABASE_URL_BACKUP" --schema=public --no-owner --no-privileges
-            # 2) Contas dos usuários: só os dados. Sem isso, uma restauração obrigaria todo mundo
-            #    a se cadastrar de novo (profiles, fichas e despesas apontam para auth.users).
+            # 1) Contas dos usuários: só os dados. Vêm PRIMEIRO de propósito: profiles, fichas e
+            #    despesas apontam para auth.users, e na restauração as chaves estrangeiras só
+            #    podem ser criadas depois que as contas já existem. Sem elas no backup, uma
+            #    restauração obrigaria todo mundo a se cadastrar de novo.
             "$PG_BIN/pg_dump" "$DATABASE_URL_BACKUP" --data-only --no-owner --no-privileges \
               --table=auth.users --table=auth.identities
+            # 2) Tabelas do sistema: estrutura + dados.
+            "$PG_BIN/pg_dump" "$DATABASE_URL_BACKUP" --schema=public --no-owner --no-privileges
           } | gzip > "backup-$data.sql.gz"
           tamanho=$(stat -c %s "backup-$data.sql.gz")
           echo "Cópia gerada: $tamanho bytes (conteúdo não é exibido)"

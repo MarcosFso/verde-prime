@@ -54,7 +54,7 @@ O plano gratuito do Supabase não faz backup. Por isso há dois workflows, ambos
 
 Os arquivos mudam pouco e ocupam bem mais espaço que o banco, por isso a cópia deles é espaçada.
 
-- **O que entra:** as tabelas do sistema (`public`, com estrutura e dados) e as contas dos usuários (`auth.users` e `auth.identities`), para que uma restauração não obrigue todos a se cadastrarem de novo.
+- **O que entra:** as contas dos usuários (`auth.users` e `auth.identities`) e as tabelas do sistema (`public`, com estrutura e dados). As contas vêm primeiro no arquivo de propósito, e a restauração não obriga ninguém a se cadastrar de novo.
 - **Por que criptografado:** este repositório é público, e arquivos da aba *Actions* de repositório público podem ser baixados por qualquer pessoa com conta no GitHub. O arquivo é cifrado com AES-256 antes de ser guardado; sem a senha ele é ilegível. O arquivo sem senha nunca é salvo e o conteúdo nunca aparece no log.
 - **O que ele confere sozinho:** que a cópia não saiu vazia, que tem a tabela `fichas` e as contas, e que o arquivo cifrado abre de volta com a senha. Se algo falhar, o workflow fica vermelho e o GitHub avisa por e-mail.
 - **Os arquivos enviados** ficam no Storage (não no banco) e por isso têm o seu próprio workflow. O banco guarda o caminho de cada arquivo, então os dois backups se completam: ao restaurar, cada arquivo volta ao caminho que a ficha espera.
@@ -86,9 +86,21 @@ A chave S3 só dá acesso ao Storage, e não ao banco. Não use a chave `service
    ```
 3. O `backup.sql` é um script SQL comum, e o segundo comando cria a pasta `anexos/` com a mesma estrutura do Storage.
 
+### O que o backup cobre
+
+- **Cobre:** as tabelas do sistema (estrutura e dados), as funções, os gatilhos e as regras de acesso (RLS) do schema `public`; as contas dos usuários, com as senhas já criptografadas (os logins continuam valendo); e, no outro workflow, os arquivos enviados.
+- **Não cobre, e vem de outro lugar:** o gatilho `on_auth_user_created` e o bucket `anexos` com as regras do Storage (estão em `migrations/0001_estado_atual.sql`); as configurações de *Authentication* do painel (endereço do site, endereços de redirecionamento, e-mails, cadastro aberto ou fechado); e a URL e as chaves de um projeto novo.
+- **Perda máxima:** até 24 horas de alterações no banco (a cópia é diária, às 03:00) e até cerca de 10 dias de arquivos enviados.
+
 ### Como restaurar
 
-Restaure num projeto **novo e vazio** (nunca por cima da produção sem antes conferir o conteúdo): crie o projeto, aplique `migrations/0001_estado_atual.sql` e `0002`, e depois carregue o `backup.sql` com `psql`. Para os arquivos, envie o conteúdo da pasta `anexos/` de volta ao bucket `anexos`, mantendo os caminhos. Teste a restauração de tempos em tempos: um backup que nunca foi restaurado é só uma esperança.
+1. Crie um projeto **novo e vazio** (nunca restaure por cima da produção).
+2. Descriptografe os dois arquivos, como na seção anterior.
+3. Carregue o `backup.sql` no banco novo (SQL Editor, ou `psql` com a conexão *Session pooler* do projeto novo). Ele traz as contas primeiro e depois recria tabelas, funções, gatilhos e regras de acesso do `public`, com os dados.
+4. Do `migrations/0001_estado_atual.sql`, aplique **só** o que o backup não traz: o gatilho `on_auth_user_created` e a criação do bucket `anexos` com as regras do Storage. Não rode o arquivo inteiro: as tabelas já existem. Faça isto **depois** do passo 3, para que o gatilho não crie perfis duplicados.
+5. Envie o conteúdo da pasta `anexos/` de volta ao bucket `anexos`, mantendo os caminhos.
+6. Rode `testes/permissoes.sql` e confira que todas as linhas estão em `ok`, e que a quantidade de fichas e de contas é a esperada.
+7. Aponte o site para o projeto novo: atualize `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` na Vercel e os segredos do GitHub, e refaça as configurações de *Authentication* no painel.
 
 ## Pontos que dependem do painel (não dá para fazer por SQL)
 
