@@ -43,6 +43,53 @@ Rode depois de qualquer mudança nas regras de acesso.
 
 A `0002` não apaga nem altera dados. Ela foi validada em transação desfeita, no banco real: os 5 ataques testados passaram a falhar e os 7 usos normais do app continuaram funcionando. Para aplicar, cole o conteúdo no SQL Editor e execute, depois rode `testes/permissoes.sql` e confira que todas as linhas estão em `ok`.
 
+## Backups (criptografados)
+
+O plano gratuito do Supabase não faz backup. Por isso há dois workflows, ambos guardando cada cópia por **30 dias** na aba *Actions → Artifacts*:
+
+| Workflow | O que copia | Quando (Brasília) |
+| --- | --- | --- |
+| [`backup-diario.yml`](../.github/workflows/backup-diario.yml) | o **banco**: usuários, fichas e financeiro | todo dia, 03:00 |
+| [`backup-anexos.yml`](../.github/workflows/backup-anexos.yml) | os **arquivos enviados** (fotos e documentos) | dias 1, 11 e 21 de cada mês, 03:00 (cerca de 10 em 10 dias) |
+
+Os arquivos mudam pouco e ocupam bem mais espaço que o banco, por isso a cópia deles é espaçada.
+
+- **O que entra:** as tabelas do sistema (`public`, com estrutura e dados) e as contas dos usuários (`auth.users` e `auth.identities`), para que uma restauração não obrigue todos a se cadastrarem de novo.
+- **Por que criptografado:** este repositório é público, e arquivos da aba *Actions* de repositório público podem ser baixados por qualquer pessoa com conta no GitHub. O arquivo é cifrado com AES-256 antes de ser guardado; sem a senha ele é ilegível. O arquivo sem senha nunca é salvo e o conteúdo nunca aparece no log.
+- **O que ele confere sozinho:** que a cópia não saiu vazia, que tem a tabela `fichas` e as contas, e que o arquivo cifrado abre de volta com a senha. Se algo falhar, o workflow fica vermelho e o GitHub avisa por e-mail.
+- **Os arquivos enviados** ficam no Storage (não no banco) e por isso têm o seu próprio workflow. O banco guarda o caminho de cada arquivo, então os dois backups se completam: ao restaurar, cada arquivo volta ao caminho que a ficha espera.
+
+### Segredos necessários
+
+Em *Settings → Secrets and variables → Actions → New repository secret*:
+
+| Segredo | O que é |
+| --- | --- |
+| `DATABASE_URL_BACKUP` | conexão **Session pooler** do Supabase (porta 5432), com a senha do banco |
+| `BACKUP_SENHA` | senha que criptografa os backups (a mesma nos dois), com **no mínimo 16 caracteres** |
+| `SUPABASE_S3_KEY_ID` | chave de acesso S3 do Storage (*Storage → S3 → New access key*) |
+| `SUPABASE_S3_SECRET` | segredo dessa chave S3 |
+
+A chave S3 só dá acesso ao Storage, e não ao banco. Não use a chave `service_role` para isso.
+
+**Guarde a `BACKUP_SENHA` em dois lugares** (por exemplo, no gerenciador de senhas e anotada num local seguro). Se ela for perdida, os backups não abrem.
+
+### Como abrir um backup
+
+1. Na aba *Actions*, abra a execução do dia, baixe o arquivo em *Artifacts* e extraia o `.zip`.
+2. Descriptografe (vai pedir a senha):
+   ```bash
+   # banco
+   gpg --decrypt backup-AAAA-MM-DD.sql.gz.gpg | gunzip > backup.sql
+   # arquivos enviados
+   gpg --decrypt anexos-AAAA-MM-DD.tar.gz.gpg | tar -xz
+   ```
+3. O `backup.sql` é um script SQL comum, e o segundo comando cria a pasta `anexos/` com a mesma estrutura do Storage.
+
+### Como restaurar
+
+Restaure num projeto **novo e vazio** (nunca por cima da produção sem antes conferir o conteúdo): crie o projeto, aplique `migrations/0001_estado_atual.sql` e `0002`, e depois carregue o `backup.sql` com `psql`. Para os arquivos, envie o conteúdo da pasta `anexos/` de volta ao bucket `anexos`, mantendo os caminhos. Teste a restauração de tempos em tempos: um backup que nunca foi restaurado é só uma esperança.
+
 ## Pontos que dependem do painel (não dá para fazer por SQL)
 
 - **Proteção contra senhas vazadas** (Authentication → Policies): hoje desligada. No plano gratuito costuma não estar disponível.

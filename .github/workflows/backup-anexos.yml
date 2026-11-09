@@ -1,0 +1,98 @@
+# Cópia dos arquivos enviados (fotos e documentos das fichas), que ficam no Storage do Supabase
+# e por isso NÃO entram no backup do banco (backup-diario.yml).
+#
+# Roda nos dias 1, 11 e 21 de cada mês, às 03:00 no horário de Brasília (intervalo de cerca de
+# 10 dias). Os arquivos mudam pouco, então não compensa copiar todo dia. Cada cópia é
+# CRIPTOGRAFADA (AES-256, gpg) e guardada por 30 dias na aba Actions (Artifacts).
+#
+# ATENÇÃO: este repositório é PÚBLICO, e artefatos de repositório público podem ser baixados
+# por qualquer pessoa com conta no GitHub. Por isso só se guarda o arquivo criptografado.
+#
+# Precisa de 3 segredos (Settings > Secrets and variables > Actions > Secrets):
+#   SUPABASE_S3_KEY_ID   chave de acesso S3 do Storage (Storage > S3 > New access key)
+#   SUPABASE_S3_SECRET   segredo dessa chave
+#   BACKUP_SENHA         a mesma senha do backup do banco (mínimo 16 caracteres)
+name: Backup dos anexos
+
+on:
+  schedule:
+    - cron: '0 6 1,11,21 * *'   # 06:00 UTC = 03:00 em Brasília
+  workflow_dispatch:            # permite rodar na mão, na aba Actions
+
+permissions: {}
+
+env:
+  # Dados públicos do projeto (a URL já vai no JavaScript do site). Confira o endereço e a
+  # região na página "S3 Connection" do Supabase se um dia trocar de projeto.
+  ENDPOINT: https://kqphbmltqneqummzcume.storage.supabase.co/storage/v1/s3
+  REGIAO: us-east-2
+  BUCKET: anexos
+
+jobs:
+  backup-anexos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Conferir os segredos
+        env:
+          SUPABASE_S3_KEY_ID: ${{ secrets.SUPABASE_S3_KEY_ID }}
+          SUPABASE_S3_SECRET: ${{ secrets.SUPABASE_S3_SECRET }}
+          BACKUP_SENHA: ${{ secrets.BACKUP_SENHA }}
+        run: |
+          if [ -z "$SUPABASE_S3_KEY_ID" ] || [ -z "$SUPABASE_S3_SECRET" ]; then echo "Faltam os segredos SUPABASE_S3_KEY_ID e SUPABASE_S3_SECRET (Settings > Secrets and variables > Actions > Secrets)."; exit 1; fi
+          if [ -z "$BACKUP_SENHA" ]; then echo "Falta o segredo BACKUP_SENHA (a senha que criptografa o backup)."; exit 1; fi
+          if [ "${#BACKUP_SENHA}" -lt 16 ]; then echo "BACKUP_SENHA precisa ter pelo menos 16 caracteres."; exit 1; fi
+
+      - name: Baixar os arquivos do Storage
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.SUPABASE_S3_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_S3_SECRET }}
+          AWS_DEFAULT_REGION: ${{ env.REGIAO }}
+          # O Supabase não aceita as somas de verificação extras das versões novas do aws-cli.
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+        run: |
+          set -euo pipefail
+          aws configure set default.s3.addressing_style path
+          # Só os NOMES e tamanhos aparecem no log (sem conteúdo). Nomes de arquivo podem ter o
+          # nome do cliente: por isso não imprimimos a lista.
+          # ("|| true": o aws devolve erro quando não há objetos, e o grep quando não sobra linha.
+          # Falha de acesso de verdade aparece no "sync" logo abaixo. Linhas terminadas em "/"
+          # são marcadores de pasta vazia do Supabase, que não viram arquivo.)
+          esperados=$( (aws s3 ls "s3://$BUCKET" --recursive --endpoint-url "$ENDPOINT" || true) | (grep -v '/$' || true) | wc -l )
+          mkdir -p anexos
+          aws s3 sync "s3://$BUCKET" anexos --endpoint-url "$ENDPOINT" --only-show-errors
+          baixados=$(find anexos -type f | wc -l)
+          echo "Arquivos no Storage: $esperados | baixados: $baixados"
+          if [ "$esperados" -ne "$baixados" ]; then
+            echo "A cópia saiu incompleta (esperava $esperados arquivos)."; exit 1
+          fi
+          if [ "$esperados" -eq 0 ]; then
+            echo "Aviso: o bucket está vazio. Se há anexos no sistema, confira o endereço e a chave."
+          fi
+          echo "DATA=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
+
+      - name: Compactar e criptografar (o arquivo sem senha nunca é guardado)
+        env:
+          BACKUP_SENHA: ${{ secrets.BACKUP_SENHA }}
+        run: |
+          set -euo pipefail
+          pacote="anexos-$DATA.tar.gz"
+          tar -czf "$pacote" anexos
+          rm -rf anexos
+          printf '%s' "$BACKUP_SENHA" | gpg --batch --yes --quiet --passphrase-fd 0 --pinentry-mode loopback \
+            --symmetric --cipher-algo AES256 -o "$pacote.gpg" "$pacote"
+          # Prova que dá para abrir de volta com a mesma senha, antes de apagar o original.
+          printf '%s' "$BACKUP_SENHA" | gpg --batch --quiet --passphrase-fd 0 --pinentry-mode loopback \
+            --decrypt "$pacote.gpg" | tar -tz > /dev/null
+          rm -f "$pacote"
+          echo "ARQUIVO=$pacote.gpg" >> "$GITHUB_ENV"
+          echo "Arquivo criptografado: $(stat -c %s "$pacote.gpg") bytes"
+
+      - name: Guardar por 30 dias
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARQUIVO }}
+          path: ${{ env.ARQUIVO }}
+          retention-days: 30
+          if-no-files-found: error

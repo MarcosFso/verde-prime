@@ -1,0 +1,96 @@
+# Cópia diária do banco do Supabase (o plano gratuito não faz backup).
+# Todo dia às 03:00 no horário de Brasília gera um arquivo com as tabelas do sistema
+# (schema public) e as contas dos usuários (auth.users e auth.identities), CRIPTOGRAFA
+# e guarda por 30 dias na aba Actions (Artifacts).
+#
+# ATENÇÃO: este repositório é PÚBLICO, e artefatos de repositório público podem ser baixados
+# por qualquer pessoa com conta no GitHub. Por isso o arquivo só é guardado criptografado
+# (AES-256, gpg). Sem a senha, ele é ilegível. Os dados nunca vão para o código nem para o log.
+#
+# Precisa de 2 segredos (Settings > Secrets and variables > Actions > Secrets):
+#   DATABASE_URL_BACKUP  conexão "Session pooler" do Supabase (porta 5432)
+#   BACKUP_SENHA         senha para criptografar (mínimo 16 caracteres). GUARDE em 2 lugares:
+#                        se perder, os backups não abrem.
+name: Backup diário
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # 06:00 UTC = 03:00 em Brasília
+  workflow_dispatch:      # permite rodar na mão, na aba Actions
+
+permissions: {}
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Conferir os segredos
+        env:
+          DATABASE_URL_BACKUP: ${{ secrets.DATABASE_URL_BACKUP }}
+          BACKUP_SENHA: ${{ secrets.BACKUP_SENHA }}
+        run: |
+          if [ -z "$DATABASE_URL_BACKUP" ]; then echo "Falta o segredo DATABASE_URL_BACKUP (Settings > Secrets and variables > Actions > Secrets)."; exit 1; fi
+          if [ -z "$BACKUP_SENHA" ]; then echo "Falta o segredo BACKUP_SENHA (a senha que criptografa o backup)."; exit 1; fi
+          if [ "${#BACKUP_SENHA}" -lt 16 ]; then echo "BACKUP_SENHA precisa ter pelo menos 16 caracteres."; exit 1; fi
+
+      - name: Instalar o pg_dump da mesma versão do banco
+        env:
+          DATABASE_URL_BACKUP: ${{ secrets.DATABASE_URL_BACKUP }}
+        run: |
+          versao=$(psql "$DATABASE_URL_BACKUP" -At -c "SHOW server_version_num" | cut -c1-2)
+          echo "Versão do banco: $versao"
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq "postgresql-client-$versao"
+          echo "PG_BIN=/usr/lib/postgresql/$versao/bin" >> "$GITHUB_ENV"
+
+      - name: Gerar a cópia
+        env:
+          DATABASE_URL_BACKUP: ${{ secrets.DATABASE_URL_BACKUP }}
+        run: |
+          set -euo pipefail
+          data=$(date -u +%Y-%m-%d)
+          {
+            # 1) Tabelas do sistema: estrutura + dados.
+            "$PG_BIN/pg_dump" "$DATABASE_URL_BACKUP" --schema=public --no-owner --no-privileges
+            # 2) Contas dos usuários: só os dados. Sem isso, uma restauração obrigaria todo mundo
+            #    a se cadastrar de novo (profiles, fichas e despesas apontam para auth.users).
+            "$PG_BIN/pg_dump" "$DATABASE_URL_BACKUP" --data-only --no-owner --no-privileges \
+              --table=auth.users --table=auth.identities
+          } | gzip > "backup-$data.sql.gz"
+          tamanho=$(stat -c %s "backup-$data.sql.gz")
+          echo "Cópia gerada: $tamanho bytes (conteúdo não é exibido)"
+          # Confere que a cópia não saiu vazia nem incompleta (sem imprimir nada do conteúdo).
+          # (grep -c lê tudo até o fim: com "grep -q" o grep sai cedo e o pipefail acusaria erro à toa.)
+          if [ "$tamanho" -lt 1000 ] \
+             || ! gunzip -c "backup-$data.sql.gz" | grep -c "CREATE TABLE public.fichas" > /dev/null \
+             || ! gunzip -c "backup-$data.sql.gz" | grep -c "COPY auth.users" > /dev/null; then
+            echo "A cópia saiu vazia ou incompleta."; rm -f "backup-$data.sql.gz"; exit 1
+          fi
+          echo "DATA=$data" >> "$GITHUB_ENV"
+
+      - name: Criptografar (o arquivo sem senha nunca é guardado)
+        env:
+          BACKUP_SENHA: ${{ secrets.BACKUP_SENHA }}
+        run: |
+          set -euo pipefail
+          arquivo="backup-$DATA.sql.gz"
+          printf '%s' "$BACKUP_SENHA" | gpg --batch --yes --quiet --passphrase-fd 0 --pinentry-mode loopback \
+            --symmetric --cipher-algo AES256 -o "$arquivo.gpg" "$arquivo"
+          # Prova que dá para abrir de volta com a mesma senha, antes de apagar o original.
+          printf '%s' "$BACKUP_SENHA" | gpg --batch --quiet --passphrase-fd 0 --pinentry-mode loopback \
+            --decrypt "$arquivo.gpg" | gunzip -c | grep -c "CREATE TABLE public.fichas" > /dev/null
+          rm -f "$arquivo"
+          echo "ARQUIVO=$arquivo.gpg" >> "$GITHUB_ENV"
+          echo "Arquivo criptografado: $(stat -c %s "$arquivo.gpg") bytes"
+
+      - name: Guardar por 30 dias
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARQUIVO }}
+          path: ${{ env.ARQUIVO }}
+          retention-days: 30
+          if-no-files-found: error

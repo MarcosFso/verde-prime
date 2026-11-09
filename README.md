@@ -105,6 +105,8 @@ src/
 .github/workflows/
   ci.yml                  -> lint, testes e build a cada push
   keep-alive.yml          -> consulta periódica que evita a pausa do Supabase
+  backup-diario.yml       -> cópia diária e criptografada do banco
+  backup-anexos.yml       -> cópia dos arquivos enviados, a cada cerca de 10 dias, criptografada
 docs/screenshots/         -> imagens usadas neste README
 supabase/                 -> estrutura do banco, regras de acesso (RLS) e teste de permissões
 ```
@@ -162,7 +164,7 @@ Para funcionar, cadastre dois segredos em *Settings → Secrets and variables �
 
 O GitHub desativa agendamentos de repositórios sem nenhum commit por 60 dias; se isso acontecer, ele avisa por e-mail e basta reativar o workflow na aba *Actions*.
 
-Se o projeto for pausado mesmo assim, o workflow falha e o GitHub avisa por e-mail. Para retomar: painel do Supabase → *Resume project*. O plano gratuito **não faz backup**; exporte o banco de tempos em tempos.
+Se o projeto for pausado mesmo assim, o workflow falha e o GitHub avisa por e-mail. Para retomar: painel do Supabase → *Resume project*. O plano gratuito **não faz backup**, por isso há dois workflows que geram cópias **criptografadas** (o repositório é público), guardadas por 30 dias: [`backup-diario.yml`](.github/workflows/backup-diario.yml) copia o banco (usuários, fichas e financeiro) todo dia, e [`backup-anexos.yml`](.github/workflows/backup-anexos.yml) copia os arquivos enviados a cada cerca de 10 dias. Detalhes, segredos e como restaurar em [`supabase/README.md`](supabase/README.md).
 
 ## 📄 Licença
 
