@@ -1,7 +1,14 @@
 name: Manter Supabase ativo
 
 # O plano gratuito do Supabase pausa o projeto após 7 dias sem atividade.
-# Este agendamento faz uma consulta leve ao banco a cada 3 dias para evitar isso.
+# Este agendamento faz duas consultas leves ao projeto a cada 3 dias para evitar isso:
+#   1) o serviço de login (Auth) precisa responder 200;
+#   2) a API de dados precisa chegar até o banco.
+#
+# Sobre a 2ª consulta: a chave pública NÃO pode ler as tabelas (acesso fechado de propósito, para
+# proteger os dados dos clientes). Por isso o resultado esperado é "permission denied" (código
+# 42501), que é uma resposta do próprio PostgreSQL. Ela prova que a API e o banco estão vivos.
+# Chave errada ou projeto pausado dão outra resposta, e aí o workflow falha.
 
 on:
   schedule:
@@ -19,12 +26,26 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          status=$(curl -s -o /dev/null -w "%{http_code}" \
+          set -eu
+          auth=$(curl -s -o /dev/null -w "%{http_code}" \
+            "$SUPABASE_URL/auth/v1/health" \
+            -H "apikey: $SUPABASE_ANON_KEY")
+
+          resposta=$(curl -s -w "\n%{http_code}" \
             "$SUPABASE_URL/rest/v1/profiles?select=id&limit=1" \
             -H "apikey: $SUPABASE_ANON_KEY" \
             -H "Authorization: Bearer $SUPABASE_ANON_KEY")
-          echo "Resposta do Supabase: $status"
-          if [ "$status" -ge 400 ]; then
+          dados=$(printf '%s' "$resposta" | tail -n 1)
+          corpo=$(printf '%s' "$resposta" | sed '$d')
+
+          echo "Login (Auth): $auth | API de dados: $dados"
+
+          dados_ok=0
+          if [ "$dados" = "200" ]; then dados_ok=1; fi
+          if [ "$dados" = "401" ] && printf '%s' "$corpo" | grep -c '"code":"42501"' > /dev/null; then dados_ok=1; fi
+
+          if [ "$auth" != "200" ] || [ "$dados_ok" != "1" ]; then
             echo "O projeto pode estar pausado ou as chaves estão erradas."
             exit 1
           fi
+          echo "Projeto ativo."
