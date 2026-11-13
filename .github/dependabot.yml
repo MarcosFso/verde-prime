@@ -1,0 +1,26 @@
+# Atualizações automáticas de dependências.
+# Objetivo: poucas propostas, só de baixo risco. Saltos de versão grandes (major) das
+# ferramentas de desenvolvimento (vite, vitest, typescript...) são ignorados, porque
+# costumam quebrar a montagem do projeto e geram e-mails de falha na Vercel.
+# Esses saltos são feitos à mão, quando fizer sentido.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    groups:
+      seguras:
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 2
