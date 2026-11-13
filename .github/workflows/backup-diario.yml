@@ -90,7 +90,7 @@ jobs:
           echo "Arquivo criptografado: $(stat -c %s "$arquivo.gpg") bytes"
 
       - name: Guardar por 30 dias
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.ARQUIVO }}
           path: ${{ env.ARQUIVO }}
